@@ -82,3 +82,35 @@ CREATE TABLE DASC5306_Fall26_S001_T4_Campaign (
     CONSTRAINT T4_Campaign_FK_Merchant FOREIGN KEY (MERCHANT_REGISTRATION_NUMBER) REFERENCES DASC5306_Fall26_S001_T4_Merchant(REGISTRATION_NUMBER) ON DELETE CASCADE
 );
 
+-- Level 2
+
+-- Cookbook: every registered cookbook
+-- Candidate keys: COOKBOOK_ID
+CREATE TABLE dasc5306_fall26_s001_t4_Cookbook (
+   COOKBOOK_ID NUMBER(10) NOT NULL,
+   cookbook_name VARCHAR2(100) NOT NULL,
+   date_of_creation DATE NOT NULL,
+   description VARCHAR2(500) NOT NULL,
+   primary_cuisine VARCHAR2(50) NOT NULL,
+   CHEF_MAV_ID CHAR(10) NOT NULL,
+    -- ADDING CONSTRAINTS
+   CONSTRAINT T4_Cookbook_PK primary key (cookbook_id),
+   CONSTRAINT T4_Cookbook_CK_NUMBER CHECK(cookbook_id > 0),
+   -- No ON DELETE: a chef who still has cookbooks cannot be deleted (protects cookbooks). 
+   CONSTRAINT T4_Cookbook_FK_Chef FOREIGN KEY (CHEF_MAV_ID) REFERENCES DASC5306_Fall26_S001_T4_Chef(CHEF_MAV_ID) 
+);
+
+-- Follow_Unfollow: which homecook follows which chef
+-- Candidate keys: (HOMECOOK_MAV_ID, CHEF_MAV_ID)
+CREATE TABLE DASC5306_Fall26_S001_T4_Follow_Unfollow (
+    HOMECOOK_MAV_ID  char(10)  NOT NULL,
+    CHEF_MAV_ID      char(10)  NOT NULL,
+    CONSTRAINT T4_Follow_PK PRIMARY KEY (HOMECOOK_MAV_ID, CHEF_MAV_ID),
+    CONSTRAINT T4_Follow_CK_self CHECK (HOMECOOK_MAV_ID <> CHEF_MAV_ID),
+    -- ON DELETE CASCADE: if the homecook is deleted, their follows mean nothing.
+    CONSTRAINT T4_Follow_FK_Homecook FOREIGN KEY (HOMECOOK_MAV_ID)
+        REFERENCES DASC5306_Fall26_S001_T4_Homecook(HOMECOOK_MAV_ID) ON DELETE CASCADE,
+    -- ON DELETE CASCADE: if the chef is deleted, nobody can follow them anymore.
+    CONSTRAINT T4_Follow_FK_Chef FOREIGN KEY (CHEF_MAV_ID)
+        REFERENCES DASC5306_Fall26_S001_T4_Chef(CHEF_MAV_ID) ON DELETE CASCADE
+);

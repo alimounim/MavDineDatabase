@@ -38,7 +38,7 @@
 | Renamed tables (Oracle doesn't allow `/`) | `Follow_Unfollow`, `Like_Dislike` |
 | Reserved words `User`, `Read` | OK, because the prefix makes the names unique |
 | Composite FKs | Like_Dislike / Read → Recipe via `(COOKBOOK_ID, RECIPE_NUMBER)`; Display_On → Recipe via `(COOKBOOK_ID, RECIPE_NUMBER)` and → Campaign via `(MERCHANT_REGISTRATION_NUMBER, CAMPAIGN_NUMBER)`. No separate FK to Cookbook or Merchant. |
-| Rules that need "today's date" | CHECK cannot use `SYSDATE`, so these go into triggers (Step 5). List them here as you find them: (1) User: age >= 18, i.e. `date_of_birth <= ADD_MONTHS(SYSDATE, -216)`; (2) User: `date_of_enrollment <= SYSDATE` |
+| Rules that need "today's date" | CHECK cannot use `SYSDATE`, so these go into triggers (Step 5). List them here as you find them: (1) User: age >= 18, i.e. `date_of_birth <= ADD_MONTHS(SYSDATE, -216)`; (2) User: `date_of_enrollment <= SYSDATE`; (3) Cookbook: `date_of_creation <= SYSDATE` |
 
 ---
 
@@ -394,3 +394,23 @@ These don't block anything. Go on to **Campaign**.
 #### Round 6: Campaign: ✅ DONE
 
 The composite PK, the FK + CASCADE with a comment, 3 CHECKs, and names ≤ 30 characters are all correct. **Next: Cookbook + Recipe (tasks 4–5).**
+
+#### Round 7: Cookbook: ✅ Runs, 1 comment to add
+
+- ✅ The types match (`chef_mav_id CHAR(10)` → `Chef.CHEF_MAV_ID`), the PK, the `cookbook_id > 0` CHECK, and the FK → Chef are all correct. Mixed case (`chef_mav_id` vs `CHEF_MAV_ID`) is fine, because Oracle uppercases unquoted names.
+- 🟡 **No ON DELETE = "no action"**: a chef who still has cookbooks can't be deleted. That's a valid choice, but **explain it in a comment** above the FK, e.g. `-- No ON DELETE: protect cookbooks; a chef with cookbooks cannot be deleted`. Note that Step 7 inserts and Step 9 deletes will have to respect this.
+- ✅ The `date_of_creation <= today` rule was added to the Decisions Log (trigger in Step 5).
+- Style (optional): `T4_Cookbook_CK_NUMBER` → `T4_Cookbook_CK_id` is clearer; `create table`/`primary key` are lowercase.
+
+**Next: Recipe.** `COOKBOOK_ID NUMBER(10)`, composite PK `(COOKBOOK_ID, RECIPE_NUMBER)`, FK → Cookbook, and decide on `time_of_publish`.
+
+
+#### Round 8: Cookbook: ✅ DONE
+
+The ON DELETE comment was added. **Next: Recipe.**
+
+#### 🔀 Order change (agreed)
+Write the tables **level by level** to match the file and Step 1: L2 = Cookbook ✅ → **Follow_Unfollow** → L3 = Subscribe, Recipe → L4. (Steps 3 and 4 were grouped by type of FK; the level order is just as valid and easier to follow.)
+
+#### ⚠️ Check on Omega: name length
+The prefix `DASC5306_Fall26_S001_T4_` is 24 characters, so `..._Cookbook` / `_Merchant` / `_Campaign` / `_Homecook` are 32 and `..._Follow_Unfollow` is 39. If Omega is Oracle **12.2 or newer** (128-character limit), everything is fine. If it is older (30-character limit), these table names fail. Run `SELECT banner FROM v$version;` on Omega once to find out.
