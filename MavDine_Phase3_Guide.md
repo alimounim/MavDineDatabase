@@ -34,6 +34,7 @@
 | Table prefix | `DASC5306_Fall26_S001_T4_` |
 | Constraint name prefix (short) | `T4_<Table>_<PK/FK/UQ/CK>_<what>`, e.g. `T4_User_UQ_email` |
 | Spelling fixes vs. schema PDF | `ingredient_1..3`, `preparation_time` |
+| Shortened names (Oracle ≤ 30 chars) | Campaign: `advertised_grocery_item_category` (32) → `advertised_grocery_category` |
 | Renamed tables (Oracle doesn't allow `/`) | `Follow_Unfollow`, `Like_Dislike` |
 | Reserved words `User`, `Read` | OK, because the prefix makes the names unique |
 | Composite FKs | Like_Dislike / Read → Recipe via `(COOKBOOK_ID, RECIPE_NUMBER)`; Display_On → Recipe via `(COOKBOOK_ID, RECIPE_NUMBER)` and → Campaign via `(MERCHANT_REGISTRATION_NUMBER, CAMPAIGN_NUMBER)`. No separate FK to Cookbook or Merchant. |
@@ -334,4 +335,62 @@ CREATE TABLE DASC5306_Fall26_S001_T9_Copy (
 💡 Tip: do 1–2 first and ask for a review ("check homecook and chef"); then 3; then 4–5. Smaller reviews catch mistakes before they spread.
 
 ### 🔍 Review
-_(Review goes here.)_
+#### Round 1: Homecook + Chef: ✅ Correct, 3 small fixes
+
+- ✅ Both PKs are also FKs → User, with `CHAR(10)` matching `MAV_ID`. `ON DELETE CASCADE` is the right choice for a subclass: a Chef or Homecook row means nothing without its User.
+- ✅ `chef_id` is `UNIQUE` + `NOT NULL`, which correctly enforces the second candidate key.
+- 🟠 **No CHECK on `chef_id`.** Also watch the `CHAR(10)` trap from Step 2b: `'CH001'` is stored as `'CH001     '`. Pick a fixed 10-character format and enforce it, e.g. `CHECK (REGEXP_LIKE(chef_id, '^CH[0-9]{8}$'))`. If the IDs vary in length, use `VARCHAR2(10)` instead.
+- 🟡 **Missing comments** (checklist): a `-- Candidate keys:` line on both tables, and a `-- ON DELETE CASCADE because ...` line above each FK.
+- 🟡 **Consistency:** `constraint`/`char` are lowercase, and `T4_Chef_uq_chef_id` uses `uq` instead of `UQ`. Oracle doesn't care, but match the style of User/Merchant.
+
+Fix these, then move on to **Campaign** (task 3).
+
+
+#### Round 2: Homecook + Chef: ✅ Passes, with 2 tiny edits
+
+- ✅ The candidate-key comments were added. Small fix: write the real column names (`HOMECOOK_MAV_ID`, `CHEF_MAV_ID`), not `MAV_ID`.
+- 🟡 `chef_id` is now `NUMBER(10)`. That's acceptable if it's a plain numeric ID (like an auto-number), even though you don't do math on it. Now add the easy CHECK: `CONSTRAINT T4_Chef_CK_chef_id CHECK (chef_id > 0)`.
+- 🟡 The comment above each FK is still missing: `-- ON DELETE CASCADE: a homecook/chef can't exist without its user`.
+- (Style, optional: `constraint`/`char` are still lowercase.)
+
+These don't block anything. Go on to **Campaign**.
+
+#### Round 3: Homecook + Chef ✅ DONE · Campaign: ❌ 1 blocker + 3 fixes
+
+**🔴 Blocker:**
+1. **The FK references `DASC5306_Fall26_S001_Merchant`, which is missing `T4_`.** That table doesn't exist, so the CREATE fails with **ORA-00942: table or view does not exist**. Use `DASC5306_Fall26_S001_T4_Merchant`.
+
+**🟠 Fix these:**
+2. **The column names don't match the schema PDF.** Only shorten names that are actually over 30 characters:
+   | You wrote | Schema | Length | Action |
+   |---|---|---|---|
+   | `MERCHANT_REGNO` | `MERCHANT_REGISTRATION_NUMBER` | 28 ✅ | Use the schema name. Display_On will use the same name, and your comment on line 2 already says it. |
+   | `ad_grocery_item` | `advertised_grocery_item_name` | 28 ✅ | Use the schema name |
+   | `ad_grocery_category` | `advertised_grocery_item_category` | **32 ❌** | Must shorten, e.g. `advertised_grocery_category` (27). **Log it in the Decisions Log.** |
+3. **No ON DELETE + comment.** Campaign is a weak entity of Merchant (the merchant is part of its PK), so `ON DELETE CASCADE` makes sense. Add a comment explaining why.
+4. **No CHECKs.** First decide what the cashback unit is. A percentage (`5.00` = 5%) works with `NUMBER(5,2)` + `CHECK (cashback_rate_per_read BETWEEN 0 AND 100)`. Dollars per read (`0.005`) needs more decimals, e.g. `NUMBER(6,4)`. Also consider `CAMPAIGN_NUMBER > 0` and `campaign_hyperlink LIKE 'http%'`.
+
+**Small:** the comment "Candidate keys: A, B" reads like two separate keys. Write `(MERCHANT_REGISTRATION_NUMBER, CAMPAIGN_NUMBER)` to show it's one composite key. Also move `);` to column 0.
+
+#### Round 4: Campaign: ❌ 2 blockers
+
+- ✅ The `T4_` in the FK table name is fixed; `MERCHANT_REGISTRATION_NUMBER` and `advertised_grocery_item_name` now match the schema; `ON DELETE CASCADE` was added.
+- 🔴 **FK column `MERCHANT_REGNO` (line 77) no longer exists.** You renamed the column but not the FK, so the CREATE fails with **ORA-00904: invalid identifier**. Use `FOREIGN KEY (MERCHANT_REGISTRATION_NUMBER)`.
+- 🔴 **`advertised_grocery_item_category` is 32 characters (line 73).** It is over the 30-character limit, so **ORA-00972** on Oracle before 12.2. Shorten it to `advertised_grocery_category` and add it to the Decisions Log "Spelling fixes" row.
+- 🟠 Still open from round 3: **no CHECKs** (decide the cashback unit, then a range CHECK; `CAMPAIGN_NUMBER > 0`; `campaign_hyperlink LIKE 'http%'`) and **no comment** explaining ON DELETE CASCADE.
+- Small: write the candidate-key comment as `(MERCHANT_REGISTRATION_NUMBER, CAMPAIGN_NUMBER)`; put `);` at column 0.
+
+#### Round 5: Campaign: ✅ Runs, add CHECKs to finish
+
+- ✅ Both blockers are fixed: the FK column is correct and all names are ≤ 30 characters. The shortened name is now in the Decisions Log.
+- 🟠 **Still no CHECKs** (the task asks for at least 1 per table). Suggested:
+  - `CONSTRAINT T4_Campaign_CK_cashback CHECK (cashback_rate_per_read BETWEEN 0 AND 100)`. This assumes a percentage; `NUMBER(5,2)` fits 0.00–100.00.
+  - `CONSTRAINT T4_Campaign_CK_number CHECK (CAMPAIGN_NUMBER > 0)`
+  - `CONSTRAINT T4_Campaign_CK_link CHECK (campaign_hyperlink LIKE 'http%')`
+- 🟡 Add the comment above the FK: `-- ON DELETE CASCADE: a campaign belongs to its merchant (part of the PK)`.
+- Small: candidate keys `(MERCHANT_REGISTRATION_NUMBER, CAMPAIGN_NUMBER)`; `);` at column 0.
+
+
+#### Round 6: Campaign: ✅ DONE
+
+The composite PK, the FK + CASCADE with a comment, 3 CHECKs, and names ≤ 30 characters are all correct. **Next: Cookbook + Recipe (tasks 4–5).**

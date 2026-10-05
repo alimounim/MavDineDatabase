@@ -43,3 +43,42 @@ CREATE TABLE DASC5306_Fall26_S001_T4_Merchant (
 );
 
 
+-- Homecook: every registered homecook
+-- Candidate keys: HOMECOOK_MAV_ID
+CREATE TABLE DASC5306_Fall26_S001_T4_Homecook (
+   HOMECOOK_MAV_ID char(10) NOT NULL,
+   CONSTRAINT T4_Homecook_PK PRIMARY KEY (HOMECOOK_MAV_ID),
+   -- ON DELETE CASCADE: a homecook can't exist without its user.
+   CONSTRAINT T4_Homecook_FK_User FOREIGN KEY (HOMECOOK_MAV_ID) REFERENCES DASC5306_Fall26_S001_T4_User(MAV_ID) ON DELETE CASCADE
+);
+
+-- Chef: every registered chef
+-- Candidate keys: CHEF_MAV_ID, chef_id
+CREATE TABLE DASC5306_Fall26_S001_T4_Chef (
+   CHEF_MAV_ID char(10) NOT NULL,
+   chef_id NUMBER(10) NOT NULL,
+   CONSTRAINT T4_Chef_PK PRIMARY KEY (CHEF_MAV_ID),
+   CONSTRAINT T4_Chef_UQ_chef_id UNIQUE (chef_id),
+   CONSTRAINT T4_Chef_CK_chef_id CHECK (chef_id > 0), 
+   -- ON DELETE CASCADE: deleting a user also deletes the chef.
+   CONSTRAINT T4_Chef_FK_User FOREIGN KEY (CHEF_MAV_ID) REFERENCES DASC5306_Fall26_S001_T4_User(MAV_ID) ON DELETE CASCADE
+);
+
+-- Campaign: every registered campaign
+-- Candidate keys: (MERCHANT_REGISTRATION_NUMBER, CAMPAIGN_NUMBER)
+CREATE TABLE DASC5306_Fall26_S001_T4_Campaign (
+    MERCHANT_REGISTRATION_NUMBER CHAR(10) NOT NULL,
+    CAMPAIGN_NUMBER NUMBER(10) NOT NULL,
+    advertised_grocery_item_name VARCHAR2(100) NOT NULL,
+    advertised_grocery_category VARCHAR2(50) NOT NULL,
+    campaign_hyperlink VARCHAR2(200) NOT NULL,
+    cashback_rate_per_read NUMBER(5,2) NOT NULL,
+    -- ADDING CONSTRAINTS
+    CONSTRAINT T4_Campaign_PK PRIMARY KEY (MERCHANT_REGISTRATION_NUMBER, CAMPAIGN_NUMBER),
+    CONSTRAINT T4_Campaign_CK_cashback CHECK (cashback_rate_per_read BETWEEN 0 AND 100),
+    CONSTRAINT T4_Campaign_CK_number CHECK (CAMPAIGN_NUMBER > 0),
+    CONSTRAINT T4_Campaign_CK_link CHECK (campaign_hyperlink LIKE 'http%'),
+    -- ON DELETE CASCADE: a campaign belongs to its merchant.
+    CONSTRAINT T4_Campaign_FK_Merchant FOREIGN KEY (MERCHANT_REGISTRATION_NUMBER) REFERENCES DASC5306_Fall26_S001_T4_Merchant(REGISTRATION_NUMBER) ON DELETE CASCADE
+);
+
