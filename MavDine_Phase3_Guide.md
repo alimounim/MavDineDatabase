@@ -18,8 +18,8 @@
 | 2c | Merchant table (same process) | ✅ Done |
 | 3 | L1–L2 tables (Homecook, Chef, Campaign, Cookbook, Follow_Unfollow) | ✅ Done |
 | 3b | L3: Subscribe + Recipe | ✅ Done |
-| 4 | L4: Like_Dislike, Read, Display_On (composite FKs) | 🟡 **Current step** |
-| 5 | Triggers | ⬜ |
+| 4 | L4: Like_Dislike, Read, Display_On (composite FKs) | ✅ Done |
+| 5 | Triggers | 🟡 **Current step** |
 | 6 | `projectDBdrop.sql` | ⬜ |
 | 7 | `projectDBinsert.sql` (20–25 rows per table) | ⬜ |
 | 8 | `projectDBqueries.sql` (7+ queries) | ⬜ |
@@ -588,7 +588,7 @@ Both typos are gone and the FK now points to `..._T4_Cookbook`. Subscribe and Re
 
 ---
 
-## 🟡 Step 4: Level 4: Like_Dislike, Read, Display_On
+## ✅ Step 4: Level 4: Like_Dislike, Read, Display_On
 
 ### Concept
 All three are relationship tables whose FKs point to **composite** PKs.
@@ -668,6 +668,146 @@ CREATE TABLE DASC5306_Fall26_S001_T4_Display_On (
 - **All FKs CASCADE**, so deleting a recipe, homecook, or campaign cleans up these rows. Remember that Chef → Cookbook does **not** cascade.
 
 ✅ Paste it in, run the **whole** file on a clean schema, push, and say **"check step 4"**.
+
+### 🔍 Review
+#### Round 1: ✅ PASSED
+
+- ✅ All 3 tables: the types match the parents, the composite PKs and composite FKs (all columns, same order) are correct, and every CASCADE has a comment.
+- ✅ `projectDBcreate.sql` now has all **12 tables** in L0 → L4 order.
+- ⚪ Optional: line 177, "their reaction go too" → "their reactions go too". Also add an empty line at the end of the file (some tools complain when the last line has no newline).
+
+---
+
+## 🟡 Step 5: Triggers
+
+### Concept
+A **CHECK** only sees the current row and can't use `SYSDATE`. A **trigger** is PL/SQL that runs automatically **before** an INSERT/UPDATE, so it can use `SYSDATE` and read **other tables**. If a rule is broken, it stops the statement with `RAISE_APPLICATION_ERROR(-20xxx, 'message')` (codes -20000 to -20999 are yours to use).
+
+| Piece | Meaning |
+|---|---|
+| `BEFORE INSERT OR UPDATE OF col ON table` | When it fires (UPDATE only when those columns change) |
+| `FOR EACH ROW` | Runs once per row; gives you `:NEW.column` (the incoming values) |
+| `/` on its own line after `END;` | **Required in SQL*Plus.** It tells SQL*Plus to run the PL/SQL block. Without it, nothing after the trigger runs. |
+| `SHOW ERRORS` | If you see "Trigger created with compilation errors", this prints the real error |
+
+These are exactly the rules you collected in the **Decisions Log**, so each trigger answers a question you can show the TA: *"Which constraints couldn't be a CHECK?"*
+
+### 📘 Reference code (paste at the **end** of `projectDBcreate.sql`, after Display_On)
+```sql
+-- ===================== TRIGGERS =====================
+-- Business rules that a CHECK constraint cannot enforce
+-- (they need SYSDATE or data from another table).
+
+-- T1: User must be at least 18, and cannot enroll in the future.
+CREATE OR REPLACE TRIGGER T4_TRG_User_dates
+BEFORE INSERT OR UPDATE OF date_of_birth, date_of_enrollment
+ON DASC5306_Fall26_S001_T4_User
+FOR EACH ROW
+BEGIN
+    IF :NEW.date_of_birth > ADD_MONTHS(SYSDATE, -216) THEN          -- 216 months = 18 years
+        RAISE_APPLICATION_ERROR(-20001, 'User must be at least 18 years old.');
+    END IF;
+    IF :NEW.date_of_enrollment > SYSDATE THEN
+        RAISE_APPLICATION_ERROR(-20002, 'Enrollment date cannot be in the future.');
+    END IF;
+END;
+/
+
+-- T2: A cookbook cannot be created in the future.
+CREATE OR REPLACE TRIGGER T4_TRG_Cookbook_date
+BEFORE INSERT OR UPDATE OF date_of_creation
+ON DASC5306_Fall26_S001_T4_Cookbook
+FOR EACH ROW
+BEGIN
+    IF :NEW.date_of_creation > SYSDATE THEN
+        RAISE_APPLICATION_ERROR(-20003, 'Cookbook creation date cannot be in the future.');
+    END IF;
+END;
+/
+
+-- T3: A recipe cannot be published in the future,
+--     or before its cookbook was created (cross-table rule).
+CREATE OR REPLACE TRIGGER T4_TRG_Recipe_date
+BEFORE INSERT OR UPDATE OF date_of_publish, COOKBOOK_ID
+ON DASC5306_Fall26_S001_T4_Recipe
+FOR EACH ROW
+DECLARE
+    v_created DATE;
+BEGIN
+    IF :NEW.date_of_publish > SYSDATE THEN
+        RAISE_APPLICATION_ERROR(-20004, 'Recipe publish date cannot be in the future.');
+    END IF;
+    SELECT date_of_creation INTO v_created
+    FROM   DASC5306_Fall26_S001_T4_Cookbook
+    WHERE  COOKBOOK_ID = :NEW.COOKBOOK_ID;
+    IF :NEW.date_of_publish < v_created THEN
+        RAISE_APPLICATION_ERROR(-20005, 'Recipe cannot be published before its cookbook was created.');
+    END IF;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN NULL;   -- cookbook doesn't exist: let the FK constraint report it
+END;
+/
+
+-- T4: A reading session cannot start in the future,
+--     or before the recipe was published (cross-table rule).
+CREATE OR REPLACE TRIGGER T4_TRG_Read_time
+BEFORE INSERT OR UPDATE OF start_time
+ON DASC5306_Fall26_S001_T4_Read
+FOR EACH ROW
+DECLARE
+    v_published DATE;
+BEGIN
+    IF :NEW.start_time > SYSTIMESTAMP THEN
+        RAISE_APPLICATION_ERROR(-20006, 'Reading session cannot start in the future.');
+    END IF;
+    SELECT date_of_publish INTO v_published
+    FROM   DASC5306_Fall26_S001_T4_Recipe
+    WHERE  COOKBOOK_ID = :NEW.COOKBOOK_ID
+    AND    RECIPE_NUMBER = :NEW.RECIPE_NUMBER;
+    IF :NEW.start_time < v_published THEN
+        RAISE_APPLICATION_ERROR(-20007, 'A recipe cannot be read before it was published.');
+    END IF;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN NULL;   -- recipe doesn't exist: let the FK constraint report it
+END;
+/
+
+-- T5: A homecook can only Like/Dislike a recipe they have read at least once.
+CREATE OR REPLACE TRIGGER T4_TRG_Like_requires_read
+BEFORE INSERT
+ON DASC5306_Fall26_S001_T4_Like_Dislike
+FOR EACH ROW
+DECLARE
+    v_reads NUMBER;
+BEGIN
+    SELECT COUNT(*) INTO v_reads
+    FROM   DASC5306_Fall26_S001_T4_Read
+    WHERE  HOMECOOK_MAV_ID = :NEW.HOMECOOK_MAV_ID
+    AND    COOKBOOK_ID     = :NEW.COOKBOOK_ID
+    AND    RECIPE_NUMBER   = :NEW.RECIPE_NUMBER;
+    IF v_reads = 0 THEN
+        RAISE_APPLICATION_ERROR(-20008, 'Homecook must read the recipe before liking/disliking it.');
+    END IF;
+END;
+/
+```
+
+**Why it's written this way (be ready to explain these at the demo):**
+- **Why triggers and not CHECKs:** T1, T2 and the first half of T3/T4 need `SYSDATE` (not allowed in CHECK). The second half of T3/T4, and T5, read **another table** (a CHECK can't).
+- **`EXCEPTION WHEN NO_DATA_FOUND THEN NULL`:** if the parent row is missing, `SELECT INTO` fails. We let the **FK** give the proper error instead of the trigger crashing.
+- **No "mutating table" error:** each trigger reads a *different* table from the one it fires on. That's what Oracle allows.
+- **Impact on Step 7 (inserts), which matters a lot:**
+  - All dates must be **≤ today**, and every user must be **18+**.
+  - Each recipe's `date_of_publish` must be on or after its cookbook's `date_of_creation`.
+  - Each read's `start_time` must be on or after its recipe's publish date.
+  - **Insert Read rows before Like_Dislike rows**, and every like/dislike needs a matching read.
+- **Demo idea:** run one bad INSERT (e.g. a like with no read). The TA sees `ORA-20008`, which proves the trigger works.
+
+### ✍️ Your task
+1. Paste the triggers at the end of `projectDBcreate.sql`.
+2. Run the whole file. Each trigger should print `Trigger created.`. If you see `...with compilation errors`, type `SHOW ERRORS` and send me the output.
+3. Make sure your file ends with a **newline** after the last `/`.
+4. Push and say **"check step 5"**.
 
 ### 🔍 Review
 _(Review goes here.)_

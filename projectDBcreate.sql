@@ -162,3 +162,60 @@ CREATE TABLE DASC5306_Fall26_S001_T4_Recipe (
     CONSTRAINT T4_Recipe_FK_Cookbook FOREIGN KEY (COOKBOOK_ID) 
         REFERENCES DASC5306_Fall26_S001_T4_Cookbook(COOKBOOK_ID) ON DELETE CASCADE
 );
+
+-- Level 4
+
+-- Like_Dislike: a homecook's single reaction (Like or Dislike) to a recipe
+-- Candidate Keys: (HOMECOOK_MAV_ID, COOKBOOK_ID, RECIPE_NUMBER)
+CREATE TABLE DASC5306_Fall26_S001_T4_Like_Dislike (
+    HOMECOOK_MAV_ID   CHAR(10)      NOT NULL,
+    COOKBOOK_ID       NUMBER(10)    NOT NULL,
+    RECIPE_NUMBER     NUMBER(5)     NOT NULL,
+    interaction_type  VARCHAR2(7)   NOT NULL,
+    CONSTRAINT T4_Like_PK PRIMARY KEY (HOMECOOK_MAV_ID, COOKBOOK_ID, RECIPE_NUMBER),
+    CONSTRAINT T4_Like_CK_type CHECK (interaction_type IN ('Like', 'Dislike')),
+    -- ON DELETE CASCADE: if the homecook is deleted, their reaction go too. 
+    CONSTRAINT T4_Like_FK_Homecook FOREIGN KEY (HOMECOOK_MAV_ID)
+        REFERENCES DASC5306_Fall26_S001_T4_Homecook(HOMECOOK_MAV_ID) ON DELETE CASCADE,
+    -- ON DELETE CASCADE: composite FK; if the recipe is deleted, its reactions go too.
+    CONSTRAINT T4_Like_FK_Recipe FOREIGN KEY (COOKBOOK_ID, RECIPE_NUMBER)
+        REFERENCES DASC5306_Fall26_S001_T4_Recipe(COOKBOOK_ID, RECIPE_NUMBER) ON DELETE CASCADE
+);
+
+-- Read: each reading session of a recipe by a homecook (the same recipe can be read many times)
+-- Candidate keys: (HOMECOOK_MAV_ID, COOKBOOK_ID, RECIPE_NUMBER, start_time)
+CREATE TABLE DASC5306_Fall26_S001_T4_Read (
+    HOMECOOK_MAV_ID   CHAR(10)       NOT NULL,
+    COOKBOOK_ID       NUMBER(10)     NOT NULL,
+    RECIPE_NUMBER     NUMBER(5)      NOT NULL,
+    start_time        TIMESTAMP      NOT NULL,
+    end_time          TIMESTAMP,                     -- NULL = session still open
+    location          VARCHAR2(100),
+    CONSTRAINT T4_Read_PK PRIMARY KEY (HOMECOOK_MAV_ID, COOKBOOK_ID, RECIPE_NUMBER, start_time),
+    CONSTRAINT T4_Read_CK_times CHECK (end_time > start_time),            -- NULL end_time passes
+    -- ON DELETE CASCADE: if the homecook is deleted, their reading history goes too.
+    CONSTRAINT T4_Read_FK_Homecook FOREIGN KEY (HOMECOOK_MAV_ID)
+        REFERENCES DASC5306_Fall26_S001_T4_Homecook(HOMECOOK_MAV_ID) ON DELETE CASCADE,
+    -- ON DELETE CASCADE: composite FK; if the recipe is deleted, its reads go too.
+    CONSTRAINT T4_Read_FK_Recipe FOREIGN KEY (COOKBOOK_ID, RECIPE_NUMBER)
+        REFERENCES DASC5306_Fall26_S001_T4_Recipe(COOKBOOK_ID, RECIPE_NUMBER) ON DELETE CASCADE
+);
+
+-- Display_On: which campaign (ad) is displayed on which recipe, and its cost
+-- Candidate keys: (COOKBOOK_ID, RECIPE_NUMBER, MERCHANT_REGISTRATION_NUMBER, CAMPAIGN_NUMBER)
+CREATE TABLE DASC5306_Fall26_S001_T4_Display_On (
+    COOKBOOK_ID                   NUMBER(10)   NOT NULL,
+    RECIPE_NUMBER                 NUMBER(5)    NOT NULL,
+    MERCHANT_REGISTRATION_NUMBER  CHAR(10)     NOT NULL,
+    CAMPAIGN_NUMBER               NUMBER(10)   NOT NULL,
+    display_cost                  NUMBER(8,2)  NOT NULL,
+    CONSTRAINT T4_Display_PK PRIMARY KEY
+        (COOKBOOK_ID, RECIPE_NUMBER, MERCHANT_REGISTRATION_NUMBER, CAMPAIGN_NUMBER),
+    CONSTRAINT T4_Display_CK_cost CHECK (display_cost >= 0),
+    -- ON DELETE CASCADE: composite FK; if the recipe is deleted, its ad placements go too.
+    CONSTRAINT T4_Display_FK_Recipe FOREIGN KEY (COOKBOOK_ID, RECIPE_NUMBER)
+        REFERENCES DASC5306_Fall26_S001_T4_Recipe(COOKBOOK_ID, RECIPE_NUMBER) ON DELETE CASCADE,
+    -- ON DELETE CASCADE: composite FK; if the campaign ends (is deleted), its placements go too.
+    CONSTRAINT T4_Display_FK_Campaign FOREIGN KEY (MERCHANT_REGISTRATION_NUMBER, CAMPAIGN_NUMBER)
+        REFERENCES DASC5306_Fall26_S001_T4_Campaign(MERCHANT_REGISTRATION_NUMBER, CAMPAIGN_NUMBER) ON DELETE CASCADE
+);
