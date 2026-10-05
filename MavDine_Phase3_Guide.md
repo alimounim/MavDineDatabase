@@ -16,8 +16,9 @@
 | 2a | Data types for **User** columns | ✅ Done |
 | 2b | First `CREATE TABLE`: User (NOT NULL, PK, UNIQUE, CHECK) | ✅ Done |
 | 2c | Merchant table (same process) | ✅ Done |
-| 3 | Homecook, Chef, Campaign, Cookbook, Recipe (FKs + ON DELETE) | 🟡 **Current step** |
-| 4 | Subscribe, Follow_Unfollow, Like_Dislike, Read, Display_On (composite FKs) | ⬜ |
+| 3 | L1–L2 tables (Homecook, Chef, Campaign, Cookbook, Follow_Unfollow) | ✅ Done |
+| 3b | L3: Subscribe + Recipe | ✅ Done |
+| 4 | L4: Like_Dislike, Read, Display_On (composite FKs) | 🟡 **Current step** |
 | 5 | Triggers | ⬜ |
 | 6 | `projectDBdrop.sql` | ⬜ |
 | 7 | `projectDBinsert.sql` (20–25 rows per table) | ⬜ |
@@ -38,7 +39,10 @@
 | Renamed tables (Oracle doesn't allow `/`) | `Follow_Unfollow`, `Like_Dislike` |
 | Reserved words `User`, `Read` | OK, because the prefix makes the names unique |
 | Composite FKs | Like_Dislike / Read → Recipe via `(COOKBOOK_ID, RECIPE_NUMBER)`; Display_On → Recipe via `(COOKBOOK_ID, RECIPE_NUMBER)` and → Campaign via `(MERCHANT_REGISTRATION_NUMBER, CAMPAIGN_NUMBER)`. No separate FK to Cookbook or Merchant. |
-| Rules that need "today's date" | CHECK cannot use `SYSDATE`, so these go into triggers (Step 5). List them here as you find them: (1) User: age >= 18, i.e. `date_of_birth <= ADD_MONTHS(SYSDATE, -216)`; (2) User: `date_of_enrollment <= SYSDATE`; (3) Cookbook: `date_of_creation <= SYSDATE` |
+| Rules that need "today's date" | CHECK cannot use `SYSDATE`, so these go into triggers (Step 5). List them here as you find them: (1) User: age >= 18, i.e. `date_of_birth <= ADD_MONTHS(SYSDATE, -216)`; (2) User: `date_of_enrollment <= SYSDATE`; (3) Cookbook: `date_of_creation <= SYSDATE`; (4) Recipe: `date_of_publish <= SYSDATE`; (5) Read: `start_time <= SYSTIMESTAMP` |
+| Cross-table rules (CHECK can't see other tables, so these become triggers) | (1) Recipe: `date_of_publish >= Cookbook.date_of_creation`; (2) Read: `start_time >= Recipe.date_of_publish` (you can't read a recipe before it's published); (3) Like_Dislike: a homecook should have **Read** the recipe before liking or disliking it (optional, nice for the demo) |
+| Date + time columns | `TIMESTAMP` (Read.start_time, Read.end_time), because it's part of the PK and needs the date **and** the time |
+| Time-of-day columns | Option A: `VARCHAR2(5)` in `'HH24:MI'` format + REGEXP CHECK (e.g. Recipe.time_of_publish) |
 
 ---
 
@@ -286,7 +290,7 @@ Change #3 and Step 2c passes.
 
 ---
 
-## 🟡 Step 3: Tables with Foreign Keys (Homecook, Chef, Campaign, Cookbook, Recipe)
+## ✅ Step 3: Tables with Foreign Keys (Homecook, Chef, Campaign, Cookbook, Recipe)
 
 ### Concept
 - **FK syntax:** `CONSTRAINT name FOREIGN KEY (col) REFERENCES Parent(pk_col) [ON DELETE CASCADE | ON DELETE SET NULL]`
@@ -414,3 +418,256 @@ Write the tables **level by level** to match the file and Step 1: L2 = Cookbook 
 
 #### ⚠️ Check on Omega: name length
 The prefix `DASC5306_Fall26_S001_T4_` is 24 characters, so `..._Cookbook` / `_Merchant` / `_Campaign` / `_Homecook` are 32 and `..._Follow_Unfollow` is 39. If Omega is Oracle **12.2 or newer** (128-character limit), everything is fine. If it is older (30-character limit), these table names fail. Run `SELECT banner FROM v$version;` on Omega once to find out.
+
+#### ✅ Name length: resolved
+The Omega screenshot in the setup slides shows **Oracle AI Database 26ai (Release 23.26)**, so the limit is **128 characters**. All of your table names are fine. (You can still run `SELECT banner FROM v$version;` once to confirm.)
+
+#### Round 9: Follow_Unfollow: ✅ DONE
+
+- ✅ Composite PK `(HOMECOOK_MAV_ID, CHEF_MAV_ID)`, both FKs point to the right tables, `CHAR(10)` matches, and each CASCADE has a comment.
+- ✅ Nice extra: `CHECK (HOMECOOK_MAV_ID <> CHEF_MAV_ID)` stops a user who is both a homecook and a chef from following themselves.
+
+**L0, L1 and L2 are complete. Next: L3 (Subscribe + Recipe), below.**
+
+---
+
+## ✅ Step 3b: Level 3: Subscribe and Recipe
+
+### Concept
+| Table | Pattern | What's new |
+|---|---|---|
+| **Subscribe** | Pure relationship table (like Follow_Unfollow) | Nothing new; the same pattern you just wrote |
+| **Recipe** | **Weak-style table:** its PK = parent's PK + its own number | The FK column is **also part of the PK**, and you must handle a "time" column (Oracle has no `TIME` type) |
+
+**Storing a time in Oracle.** Pick one option and log it in the Decisions Log:
+| Option | Column | Pros / cons |
+|---|---|---|
+| A (recommended) | `time_of_publish VARCHAR2(5)` + `CHECK (REGEXP_LIKE(time_of_publish, '^([01][0-9]\|2[0-3]):[0-5][0-9]$'))` | Matches your schema (2 columns), easy to insert `'14:30'` |
+| B | `time_of_publish DATE`, inserted with `TO_DATE('14:30','HH24:MI')` | Real time type, but Oracle stores a dummy date with it, which is confusing in output |
+
+### Example (Library DB, not your project)
+```sql
+-- Copy: each physical copy of a book. Copy numbers restart at 1 for every book.
+-- Candidate keys: (BookID, CopyNo)
+CREATE TABLE DASC5306_Fall26_S001_T9_Copy (
+    BookID        NUMBER(10)    NOT NULL,
+    CopyNo        NUMBER(4)     NOT NULL,
+    shelf_code    VARCHAR2(10)  NOT NULL,
+    acquired_date DATE          NOT NULL,
+    acquired_time VARCHAR2(5),                       -- 'HH24:MI' (Oracle has no TIME type)
+    condition     VARCHAR2(10)  NOT NULL,
+    page_count    NUMBER(5),
+    CONSTRAINT T9_Copy_PK      PRIMARY KEY (BookID, CopyNo),       -- FK column is part of the PK
+    CONSTRAINT T9_Copy_CK_no   CHECK (CopyNo > 0),
+    CONSTRAINT T9_Copy_CK_time CHECK (REGEXP_LIKE(acquired_time, '^([01][0-9]|2[0-3]):[0-5][0-9]$')),
+    CONSTRAINT T9_Copy_CK_cond CHECK (condition IN ('New','Good','Worn','Damaged')),
+    CONSTRAINT T9_Copy_CK_page CHECK (page_count > 0),
+    -- ON DELETE CASCADE: a copy cannot exist without its book (BookID is part of the PK)
+    CONSTRAINT T9_Copy_FK_Book FOREIGN KEY (BookID)
+        REFERENCES DASC5306_Fall26_S001_T9_Book(BookID) ON DELETE CASCADE
+);
+
+-- Wishlist: which member wants which book (M:N relationship, no extra attributes)
+-- Candidate keys: (MID, BookID)
+CREATE TABLE DASC5306_Fall26_S001_T9_Wishlist (
+    MID    CHAR(8)     NOT NULL,
+    BookID NUMBER(10)  NOT NULL,
+    CONSTRAINT T9_Wish_PK PRIMARY KEY (MID, BookID),
+    CONSTRAINT T9_Wish_FK_Member FOREIGN KEY (MID)
+        REFERENCES DASC5306_Fall26_S001_T9_Member(MID) ON DELETE CASCADE,
+    CONSTRAINT T9_Wish_FK_Book FOREIGN KEY (BookID)
+        REFERENCES DASC5306_Fall26_S001_T9_Book(BookID) ON DELETE CASCADE
+);
+```
+Note: a CHECK on a nullable column (`acquired_time`, `page_count`) passes when the value is NULL. That is how Oracle treats an UNKNOWN result in a CHECK.
+
+### ✍️ Your task: add under `-- Level 3` in `projectDBcreate.sql`
+
+**1. Subscribe**
+- [ ] `HOMECOOK_MAV_ID CHAR(10)`, `COOKBOOK_ID NUMBER(10)` (types must match the parents)
+- [ ] Composite PK; 2 FKs (→ Homecook, → Cookbook); choose ON DELETE and comment it
+
+**2. Recipe** (columns: COOKBOOK_ID, RECIPE_NUMBER, title, source_url, date_of_publish, time_of_publish, meal_type, ingredient_1, ingredient_2, ingredient_3, preparation_time, cook_time, total_calories)
+- [ ] PK `(COOKBOOK_ID, RECIPE_NUMBER)`; FK `COOKBOOK_ID` → Cookbook. Think: should deleting a cookbook delete its recipes?
+- [ ] `time_of_publish`: Option A or B (and log your choice)
+- [ ] `preparation_time`, `cook_time`: whole minutes, `NUMBER(4)`
+- [ ] Which ingredients are required? (At least `ingredient_1`.)
+- [ ] CHECKs, at least 4. Ideas: `RECIPE_NUMBER > 0`; `meal_type IN (...)`; times `> 0`; `total_calories >= 0`; `source_url LIKE 'http%'`.
+- [ ] Log in the Decisions Log any "vs. today" rule (trigger candidate), and any **cross-table** rule. For example, can a recipe be published *before* its cookbook was created? A CHECK can't look at another table, so that rule needs a trigger.
+
+### 📘 Reference code (copy under `-- Level 3` in `projectDBcreate.sql`)
+```sql
+-- Level 3
+
+-- Subscribe: which homecook subscribes to which cookbook
+-- Candidate keys: (HOMECOOK_MAV_ID, COOKBOOK_ID)
+CREATE TABLE DASC5306_Fall26_S001_T4_Subscribe (
+    HOMECOOK_MAV_ID  CHAR(10)    NOT NULL,
+    COOKBOOK_ID      NUMBER(10)  NOT NULL,
+    CONSTRAINT T4_Subscribe_PK PRIMARY KEY (HOMECOOK_MAV_ID, COOKBOOK_ID),
+    -- ON DELETE CASCADE: if the homecook is deleted, their subscriptions go too.
+    CONSTRAINT T4_Subscribe_FK_Homecook FOREIGN KEY (HOMECOOK_MAV_ID)
+        REFERENCES DASC5306_Fall26_S001_T4_Homecook(HOMECOOK_MAV_ID) ON DELETE CASCADE,
+    -- ON DELETE CASCADE: if the cookbook is deleted, nobody can subscribe to it.
+    CONSTRAINT T4_Subscribe_FK_Cookbook FOREIGN KEY (COOKBOOK_ID)
+        REFERENCES DASC5306_Fall26_S001_T4_Cookbook(COOKBOOK_ID) ON DELETE CASCADE
+);
+
+-- Recipe: every recipe, numbered within its cookbook (recipe numbers restart at 1 per cookbook)
+-- Candidate keys: (COOKBOOK_ID, RECIPE_NUMBER)
+CREATE TABLE DASC5306_Fall26_S001_T4_Recipe (
+    COOKBOOK_ID       NUMBER(10)     NOT NULL,
+    RECIPE_NUMBER     NUMBER(5)      NOT NULL,
+    title             VARCHAR2(150)  NOT NULL,
+    source_url        VARCHAR2(200),                 -- optional: original/self-created recipes have none
+    date_of_publish   DATE           NOT NULL,
+    time_of_publish   VARCHAR2(5)    NOT NULL,       -- 'HH24:MI' (Oracle has no TIME type)
+    meal_type         VARCHAR2(15)   NOT NULL,
+    ingredient_1      VARCHAR2(50)   NOT NULL,       -- at least one ingredient is required
+    ingredient_2      VARCHAR2(50),
+    ingredient_3      VARCHAR2(50),
+    preparation_time  NUMBER(4)      NOT NULL,       -- minutes
+    cook_time         NUMBER(4)      NOT NULL,       -- minutes (0 = no-cook recipe, e.g. salad)
+    total_calories    NUMBER(5)      NOT NULL,
+    CONSTRAINT T4_Recipe_PK PRIMARY KEY (COOKBOOK_ID, RECIPE_NUMBER),
+    CONSTRAINT T4_Recipe_CK_number   CHECK (RECIPE_NUMBER > 0),
+    CONSTRAINT T4_Recipe_CK_time     CHECK (REGEXP_LIKE(time_of_publish, '^([01][0-9]|2[0-3]):[0-5][0-9]$')),
+    CONSTRAINT T4_Recipe_CK_meal     CHECK (meal_type IN ('Breakfast','Lunch','Dinner','Snack','Dessert')),
+    CONSTRAINT T4_Recipe_CK_prep     CHECK (preparation_time > 0),
+    CONSTRAINT T4_Recipe_CK_cook     CHECK (cook_time >= 0),
+    CONSTRAINT T4_Recipe_CK_calories CHECK (total_calories >= 0),
+    CONSTRAINT T4_Recipe_CK_url      CHECK (source_url LIKE 'http%'),   -- NULL passes
+    -- ON DELETE CASCADE: a recipe cannot exist without its cookbook (COOKBOOK_ID is part of the PK)
+    CONSTRAINT T4_Recipe_FK_Cookbook FOREIGN KEY (COOKBOOK_ID)
+        REFERENCES DASC5306_Fall26_S001_T4_Cookbook(COOKBOOK_ID) ON DELETE CASCADE
+);
+```
+
+**Why it's written this way (be ready to explain these at the demo):**
+- **Types match the parents:** `CHAR(10)` → Homecook, `NUMBER(10)` → Cookbook. FK and PK must have the same type.
+- **Recipe's PK includes the FK.** Recipe #1 can exist in many cookbooks, which is why Step 4 must use the **pair** to reference Recipe.
+- **CASCADE chain:** Cookbook → Recipe cascades, but Chef → Cookbook does not (your choice in Step 3). So deleting a chef with cookbooks is blocked, while deleting a cookbook removes its recipes and subscriptions.
+- **Value lists:** `meal_type` values must match **exactly** in your inserts (case-sensitive: `'Dinner'`, not `'dinner'`).
+- **Not done here (triggers, Step 5):** `date_of_publish <= SYSDATE` and `date_of_publish >= cookbook's date_of_creation`. Both are already in the Decisions Log.
+
+✅ Paste it in, run it on Omega (or in SQL Developer), push, and say **"next"**.
+
+### 🔍 Review (round 1): ❌ 3 blockers. Neither table will be created yet.
+
+| # | Line | Problem | Oracle error you'd get | Fix |
+|---|---|---|---|---|
+| 🔴 1 | 128, 131 | `CONSTARINT` is misspelled (twice) | ORA-00907 / ORA-00902 | `CONSTRAINT` |
+| 🔴 2 | 160 | Missing **comma** after the `T4_Recipe_CK_url` line, before the FK | ORA-00907: missing right parenthesis | `... LIKE 'http%'),` |
+| 🔴 3 | 163 | FK points to `DASC5306_Fall26_S001_Cookbook`: the `T4_` is missing | ORA-00942: table or view does not exist | `REFERENCES DASC5306_Fall26_S001_T4_Cookbook(COOKBOOK_ID)` |
+| 🟡 4 | 149 | The comment `-- Minutes (0 = no-cook recipe...)` sits above `preparation_time`, but the 0 rule is for `cook_time` (prep must be > 0) | none | Put `-- minutes` above prep, and the "0 = no-cook" comment above `cook_time` |
+| 🟡 5 | 141 | `source_url` is `NOT NULL` (the reference had it optional) | none | Fine if you keep it, but then **every** recipe insert in Step 7 needs a URL that starts with `http`. Decide and keep it consistent. |
+| ⚪ 6 | 161 | Stray `)` in the comment `(COOKBOOK_ID) is part of the PK)` | none (it's a comment) | Optional cleanup |
+
+✅ Everything else is correct: the types match the parents, the composite PK, all 7 CHECKs, and the CASCADE comments.
+
+💡 **Lesson:** one missing comma or one typo stops the **whole** CREATE. Run the script after every table, so an error points to one place.
+
+Fix 1–3 (and 4 if you like), run it, push, and say **"check step 3b"** again.
+
+### 🔍 Review (round 2): ❌ 2 blockers still open (half fixed)
+
+- ✅ Fixed: the comma after `T4_Recipe_CK_url`, the first `CONSTRAINT` (Homecook FK), and the "0 = no-cook" comment now sits above `cook_time`.
+- 🔴 **Line 131:** the **second** typo is still there: `CONSTARINT T4_Subscribe_FK_Cookbook` → `CONSTRAINT`.
+- 🔴 **Line 163:** still `REFERENCES DASC5306_Fall26_S001_Cookbook`. Add `T4_`: `DASC5306_Fall26_S001_T4_Cookbook`.
+- 🟡 `source_url` is still `NOT NULL`. That's OK, and it's now your decision: every recipe insert needs an `http…` URL.
+
+💡 **Tip:** use **Find (⌘F)** for `CONSTARINT` and `S001_Cookbook`. Both should return **0 results** when you're done.
+
+Fix these two, run, push, and say **"check step 3b"**.
+
+
+### 🔍 Review (round 3): ✅ PASSED
+
+Both typos are gone and the FK now points to `..._T4_Cookbook`. Subscribe and Recipe are correct. **Level 3 is done.**
+💡 **Lesson:** after a fix, search for the old text (⌘F) to make sure **every** copy is gone.
+
+---
+
+## 🟡 Step 4: Level 4: Like_Dislike, Read, Display_On
+
+### Concept
+All three are relationship tables whose FKs point to **composite** PKs.
+
+| Rule | Why |
+|---|---|
+| An FK must list **all** columns of the parent's PK, **in the same order** | `FOREIGN KEY (COOKBOOK_ID, RECIPE_NUMBER) REFERENCES ..._Recipe(COOKBOOK_ID, RECIPE_NUMBER)` |
+| Each FK column has the **same type** as its parent column | COOKBOOK_ID `NUMBER(10)`, RECIPE_NUMBER `NUMBER(5)`, MERCHANT_REGISTRATION_NUMBER `CHAR(10)`, CAMPAIGN_NUMBER `NUMBER(10)` |
+| No separate FK to Cookbook or Merchant | The composite FK already guarantees that the parent exists (see the Decisions Log) |
+| `TIMESTAMP` for Read.start_time / end_time | It's part of the PK, so it must tell apart two readings on the **same day** |
+
+### 📘 Reference code (copy under `-- LEVEL 4`, after Recipe)
+```sql
+-- LEVEL 4
+
+-- Like_Dislike: a homecook's single reaction (Like or Dislike) to a recipe
+-- Candidate keys: (HOMECOOK_MAV_ID, COOKBOOK_ID, RECIPE_NUMBER)
+CREATE TABLE DASC5306_Fall26_S001_T4_Like_Dislike (
+    HOMECOOK_MAV_ID   CHAR(10)      NOT NULL,
+    COOKBOOK_ID       NUMBER(10)    NOT NULL,
+    RECIPE_NUMBER     NUMBER(5)     NOT NULL,
+    interaction_type  VARCHAR2(7)   NOT NULL,
+    CONSTRAINT T4_Like_PK PRIMARY KEY (HOMECOOK_MAV_ID, COOKBOOK_ID, RECIPE_NUMBER),
+    CONSTRAINT T4_Like_CK_type CHECK (interaction_type IN ('Like','Dislike')),
+    -- ON DELETE CASCADE: if the homecook is deleted, their reactions go too.
+    CONSTRAINT T4_Like_FK_Homecook FOREIGN KEY (HOMECOOK_MAV_ID)
+        REFERENCES DASC5306_Fall26_S001_T4_Homecook(HOMECOOK_MAV_ID) ON DELETE CASCADE,
+    -- ON DELETE CASCADE: composite FK; if the recipe is deleted, its reactions go too.
+    CONSTRAINT T4_Like_FK_Recipe FOREIGN KEY (COOKBOOK_ID, RECIPE_NUMBER)
+        REFERENCES DASC5306_Fall26_S001_T4_Recipe(COOKBOOK_ID, RECIPE_NUMBER) ON DELETE CASCADE
+);
+
+-- Read: each reading session of a recipe by a homecook (the same recipe can be read many times)
+-- Candidate keys: (HOMECOOK_MAV_ID, COOKBOOK_ID, RECIPE_NUMBER, start_time)
+CREATE TABLE DASC5306_Fall26_S001_T4_Read (
+    HOMECOOK_MAV_ID   CHAR(10)       NOT NULL,
+    COOKBOOK_ID       NUMBER(10)     NOT NULL,
+    RECIPE_NUMBER     NUMBER(5)      NOT NULL,
+    start_time        TIMESTAMP      NOT NULL,
+    end_time          TIMESTAMP,                     -- NULL = session still open
+    location          VARCHAR2(100),
+    CONSTRAINT T4_Read_PK PRIMARY KEY (HOMECOOK_MAV_ID, COOKBOOK_ID, RECIPE_NUMBER, start_time),
+    CONSTRAINT T4_Read_CK_times CHECK (end_time > start_time),            -- NULL end_time passes
+    -- ON DELETE CASCADE: if the homecook is deleted, their reading history goes too.
+    CONSTRAINT T4_Read_FK_Homecook FOREIGN KEY (HOMECOOK_MAV_ID)
+        REFERENCES DASC5306_Fall26_S001_T4_Homecook(HOMECOOK_MAV_ID) ON DELETE CASCADE,
+    -- ON DELETE CASCADE: composite FK; if the recipe is deleted, its reads go too.
+    CONSTRAINT T4_Read_FK_Recipe FOREIGN KEY (COOKBOOK_ID, RECIPE_NUMBER)
+        REFERENCES DASC5306_Fall26_S001_T4_Recipe(COOKBOOK_ID, RECIPE_NUMBER) ON DELETE CASCADE
+);
+
+-- Display_On: which campaign (ad) is displayed on which recipe, and its cost
+-- Candidate keys: (COOKBOOK_ID, RECIPE_NUMBER, MERCHANT_REGISTRATION_NUMBER, CAMPAIGN_NUMBER)
+CREATE TABLE DASC5306_Fall26_S001_T4_Display_On (
+    COOKBOOK_ID                   NUMBER(10)   NOT NULL,
+    RECIPE_NUMBER                 NUMBER(5)    NOT NULL,
+    MERCHANT_REGISTRATION_NUMBER  CHAR(10)     NOT NULL,
+    CAMPAIGN_NUMBER               NUMBER(10)   NOT NULL,
+    display_cost                  NUMBER(8,2)  NOT NULL,
+    CONSTRAINT T4_Display_PK PRIMARY KEY
+        (COOKBOOK_ID, RECIPE_NUMBER, MERCHANT_REGISTRATION_NUMBER, CAMPAIGN_NUMBER),
+    CONSTRAINT T4_Display_CK_cost CHECK (display_cost >= 0),
+    -- ON DELETE CASCADE: composite FK; if the recipe is deleted, its ad placements go too.
+    CONSTRAINT T4_Display_FK_Recipe FOREIGN KEY (COOKBOOK_ID, RECIPE_NUMBER)
+        REFERENCES DASC5306_Fall26_S001_T4_Recipe(COOKBOOK_ID, RECIPE_NUMBER) ON DELETE CASCADE,
+    -- ON DELETE CASCADE: composite FK; if the campaign ends (is deleted), its placements go too.
+    CONSTRAINT T4_Display_FK_Campaign FOREIGN KEY (MERCHANT_REGISTRATION_NUMBER, CAMPAIGN_NUMBER)
+        REFERENCES DASC5306_Fall26_S001_T4_Campaign(MERCHANT_REGISTRATION_NUMBER, CAMPAIGN_NUMBER) ON DELETE CASCADE
+);
+```
+
+**Why it's written this way (be ready to explain these at the demo):**
+- **Like_Dislike PK has no time column**, so a homecook has exactly **one** reaction per recipe. Changing a Like to a Dislike is an `UPDATE`, which is a good candidate for Step 9.
+- **Read PK includes `start_time`** (assumption 3 in your schema PDF), so the same homecook can read the same recipe many times.
+- **`end_time > start_time`** compares two columns of the same row, so a CHECK is enough. "Not in the future" and "after publish date" need triggers (they're in the Decisions Log).
+- **Inserting TIMESTAMPs (for Step 7):** `TIMESTAMP '2026-09-14 18:30:00'`.
+- **All FKs CASCADE**, so deleting a recipe, homecook, or campaign cleans up these rows. Remember that Chef → Cookbook does **not** cascade.
+
+✅ Paste it in, run the **whole** file on a clean schema, push, and say **"check step 4"**.
+
+### 🔍 Review
+_(Review goes here.)_

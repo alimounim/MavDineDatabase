@@ -86,7 +86,7 @@ CREATE TABLE DASC5306_Fall26_S001_T4_Campaign (
 
 -- Cookbook: every registered cookbook
 -- Candidate keys: COOKBOOK_ID
-CREATE TABLE dasc5306_fall26_s001_t4_Cookbook (
+CREATE TABLE DASC5306_FALL26_S001_T4_Cookbook (
    COOKBOOK_ID NUMBER(10) NOT NULL,
    cookbook_name VARCHAR2(100) NOT NULL,
    date_of_creation DATE NOT NULL,
@@ -113,4 +113,52 @@ CREATE TABLE DASC5306_Fall26_S001_T4_Follow_Unfollow (
     -- ON DELETE CASCADE: if the chef is deleted, nobody can follow them anymore.
     CONSTRAINT T4_Follow_FK_Chef FOREIGN KEY (CHEF_MAV_ID)
         REFERENCES DASC5306_Fall26_S001_T4_Chef(CHEF_MAV_ID) ON DELETE CASCADE
+);
+
+
+-- LEVEL 3
+
+-- Subscribe: which homecook subscribes to which cookbook
+-- Candidate Keys: (HOMECOOK_MAV_ID, COOKBOOK_ID)
+CREATE TABLE DASC5306_Fall26_S001_T4_Subscribe (
+    HOMECOOK_MAV_ID CHAR(10) NOT NULL,
+    COOKBOOK_ID NUMBER(10) NOT NULL,
+    CONSTRAINT T4_Subscribe_PK PRIMARY KEY (HOMECOOK_MAV_ID, COOKBOOK_ID),
+    -- ON DELETE CASCADE: if the homecook is deleted, their subscriptions go too.
+    CONSTRAINT T4_Subscribe_FK_Homecook FOREIGN KEY (HOMECOOK_MAV_ID) 
+        REFERENCES DASC5306_Fall26_S001_T4_Homecook (HOMECOOK_MAV_ID) ON DELETE CASCADE,
+    -- ON DELETE CASCADE: if the cookbook is deleted, nobody can subscribe to it. 
+    CONSTRAINT T4_Subscribe_FK_Cookbook FOREIGN KEY (COOKBOOK_ID) 
+        REFERENCES DASC5306_Fall26_S001_T4_Cookbook (COOKBOOK_ID) ON DELETE CASCADE
+);
+
+-- Recipe: every recipe, numbered within its cookbook (recipe numbers restart at 1 per cookbook)
+-- Candidate keys: (COOKBOOK_ID, RECIPE_NUMBER)
+CREATE TABLE DASC5306_Fall26_S001_T4_Recipe (
+    COOKBOOK_ID NUMBER(10) NOT NULL, 
+    RECIPE_NUMBER NUMBER(5) NOT NULL,
+    title VARCHAR2(150) NOT NULL,
+    source_url VARCHAR2(200) NOT NULL,
+    date_of_publish DATE NOT NULL,
+    -- 'HH24:MI' (Oracle has no TIME type)
+    time_of_publish VARCHAR2(5) NOT NULL,
+    meal_type VARCHAR2(15) NOT NULL,
+    ingredient_1 VARCHAR2(50) NOT NULL,
+    ingredient_2 VARCHAR2(50) ,
+    ingredient_3 VARCHAR2(50) ,
+    preparation_time NUMBER(4) NOT NULL,
+    -- Minutes (0 = no-cook recipe, e.g. salad)
+    cook_time NUMBER(4) NOT NULL,
+    total_calories NUMBER(5) NOT NULL,
+    CONSTRAINT T4_Recipe_PK PRIMARY KEY (COOKBOOK_ID, RECIPE_NUMBER),
+    CONSTRAINT T4_Recipe_CK_number CHECK (RECIPE_NUMBER > 0),
+    CONSTRAINT T4_Recipe_CK_time CHECK (REGEXP_LIKE(time_of_publish, '^([01][0-9]|2[0-3]):[0-5][0-9]$')),
+    CONSTRAINT T4_Recipe_CK_meal CHECK (meal_type IN ('Breakfast','Lunch','Dinner','Snack','Dessert')),
+    CONSTRAINT T4_Recipe_CK_prep CHECK (preparation_time > 0),
+    CONSTRAINT T4_Recipe_CK_cook CHECK (cook_time >= 0),
+    CONSTRAINT T4_Recipe_CK_calories CHECK (total_calories >= 0),
+    CONSTRAINT T4_Recipe_CK_url CHECK (source_url LIKE 'http%'),
+    -- ON DELETE CASCADE: a recipe cannot exist without its cookbook (COOKBOOK_ID) is part of the PK)
+    CONSTRAINT T4_Recipe_FK_Cookbook FOREIGN KEY (COOKBOOK_ID) 
+        REFERENCES DASC5306_Fall26_S001_T4_Cookbook(COOKBOOK_ID) ON DELETE CASCADE
 );
