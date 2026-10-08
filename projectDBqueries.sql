@@ -48,6 +48,21 @@ Sunday                    34                37.7
 7 rows selected.
 */
 
+/* Expected output (after projectDBupdate.sql):
+   Why it changed: U1 closes 2 open sessions; I1 adds six 55-minute Tuesday reads -> Tuesday 13.7 -> 21.7
+DAY_OF_WEEK READING_SESSIONS AVG_READING_MINUTES
+----------- ---------------- -------------------
+Monday                    41                15.7
+Tuesday                   35                21.7
+Wednesday                 51                17.3
+Thursday                  31                13.6
+Friday                    35                21.7
+Saturday                  36                28.2
+Sunday                    34                37.7
+
+7 rows selected.
+*/
+
 -- =====================================================================
 -- Query 2 (Business Goal 2)
 -- English: List the top 10 chefs who, on average, received the most likes
@@ -96,6 +111,24 @@ Hannah Brooks              5003            2           2                    1
 10 rows selected.
 */
 
+/* Expected output (after projectDBupdate.sql):
+   Why it changed: I2 adds 2 likes to Kwame Mensah's 2025 recipe (now 1st); D2 deletes Gabriel Costa's cookbook (drops out)
+CHEF_NAME               CHEF_ID RECIPES_2025 TOTAL_LIKES AVG_LIKES_PER_RECIPE
+-------------------- ---------- ------------ ----------- --------------------
+Kwame Mensah               5008            1           5                    5
+Fatima Ali                 5013            2           9                  4.5
+Amara Eze                  5017            5          10                    2
+Chloe Bennett              5011            2           4                    2
+Noah Kim                   5018            2           4                    2
+Ethan Walker               5014            2           3                  1.5
+Hamid Karimi               5020            2           3                  1.5
+Grace Owens                5021            2           2                    1
+Hannah Brooks              5003            2           2                    1
+Tariq Aziz                 5022            2           2                    1
+
+10 rows selected.
+*/
+
 -- =====================================================================
 -- Query 3 (Business Goal 3)
 -- English: For each year of birth, list the most popular meal type along with
@@ -130,6 +163,22 @@ BIRTH_YEAR MEAL_TYPE  TOTAL_READS AVG_COOK_TIME_MIN
       1999 Brunch               6                20
       2000 Dinner              28              18.7
       2001 Lunch               26              14.1
+      2002 Breakfast           27              10.1
+      2003 Dessert             25                29
+      2004 Snacks              20              11.9
+      2005 Brunch              10                18
+
+8 rows selected.
+*/
+
+/* Expected output (after projectDBupdate.sql):
+   Why it changed: I1: Omar Haddad (born 1998) reads 6 dinner recipes -> 1998 changes from Lunch to Dinner
+BIRTH_YEAR MEAL_TYPE  TOTAL_READS AVG_COOK_TIME_MIN
+---------- ---------- ----------- -----------------
+      1998 Dinner               7              23.1
+      1999 Brunch               6                20
+      2000 Dinner              28              18.9
+      2001 Lunch               24              13.6
       2002 Breakfast           27              10.1
       2003 Dessert             25                29
       2004 Snacks              20              11.9
@@ -181,6 +230,15 @@ Midnight Mexican Snacks        Mexican                   2                  1.5
 2 rows selected.
 */
 
+/* Expected output (after projectDBupdate.sql):
+   Why it changed: I3: a Nursing student reads 'Midnight Mexican Snacks' (removed); more CSE reads of 'Code & Curry' (3.5 -> 4.5)
+COOKBOOK_NAME                  PRIMARY_CUISINE NUM_RECIPES AVG_READS_PER_RECIPE
+------------------------------ --------------- ----------- --------------------
+Code & Curry                   Indian                    2                  4.5
+
+1 row selected.
+*/
+
 -- =====================================================================
 -- Query 5 (Business Goal 5)
 -- English: Who are the student subscribers who have read every recipe from the
@@ -226,6 +284,16 @@ Priya Sharma                   3.58 India        priya.sharma@mavs.uta.edu
 2 rows selected.
 */
 
+/* Expected output (after projectDBupdate.sql):
+   Why it changed: D1: Arjun Patel unsubscribes (removed); I4: Linh Nguyen reads her missing recipe (added)
+STUDENT_NAME         CUMULATIVE_GPA NATIONALITY  EMAIL
+-------------------- -------------- ------------ ------------------------------
+Linh Nguyen                    3.48 Vietnam      linh.nguyen@mavs.uta.edu
+Priya Sharma                   3.58 India        priya.sharma@mavs.uta.edu
+
+2 rows selected.
+*/
+
 -- =====================================================================
 -- Query 6 (Business Goal 6, added by the team)
 -- English: List the names, websites, and advertised grocery items of merchants whose
@@ -249,6 +317,18 @@ Harvest Basket               https://www.harvestbasket.com        Russet Potatoe
 Prairie Pantry               https://www.prairiepantry.com        All-Purpose Flour
 
 3 rows selected.
+*/
+
+/* Expected output (after projectDBupdate.sql):
+   Why it changed: I5: Mav Market Co-op (Arlington) launches its first campaign
+MERCHANT_NAME                WEBSITE                              ADVERTISED_GROCERY_ITEM_NAME
+---------------------------- ------------------------------------ ----------------------------
+Cedar Creek Coffee           https://www.cedarcreekcoffee.com     Medium Roast Coffee Beans
+Harvest Basket               https://www.harvestbasket.com        Russet Potatoes (5 lb)
+Mav Market Co-op             https://www.mavmarketcoop.com        Local Farm Eggs
+Prairie Pantry               https://www.prairiepantry.com        All-Purpose Flour
+
+4 rows selected.
 */
 
 -- =====================================================================
@@ -308,4 +388,35 @@ Blue Bonnet Dairy                         147.6            5.4      142.2
 FreshCart Market                         168.41            3.9     164.51
 
 22 rows selected.
+*/
+
+/* Expected output (after projectDBupdate.sql):
+   Why it changed: U2 renegotiates Spice Route and Metro Meat (now positive); I5 adds Mav Market Co-op
+MERCHANT_NAME                TOTAL_DISPLAY_COST TOTAL_CASHBACK NET_AMOUNT
+---------------------------- ------------------ -------------- ----------
+Gulf Coast Seafood                            3           7.15      -4.15
+Lone Star Grocers                           1.5              3       -1.5
+Metro Meat & Seafood                        2.5              2         .5
+Mav Market Co-op                             18            2.6       15.4
+Spice Route Imports                          25              9         16
+Bayou Sauce Works                         19.67              0      19.67
+Cedar Creek Coffee                         24.7            1.5       23.2
+Pecan Valley Farms                         25.6            1.1       24.5
+Prairie Pantry                            46.24            2.3      43.94
+Golden Grain Bakery Supply                49.45              1      48.45
+Tex-Mex Pantry                            52.12             .9      51.22
+Harvest Basket                            61.98            2.7      59.28
+Nature's Table                            70.55            8.8      61.75
+Rio Grande Foods                          64.97            2.4      62.57
+Sunrise Produce                           67.78           4.55      63.23
+Panhandle Pasta Co                        65.24            1.2      64.04
+Hill Country Honey                        74.43           8.55      65.88
+Maple & Oak Creamery                      74.61           2.16      72.45
+Red River Beverages                       77.65            2.7      74.95
+GreenLeaf Organics                         81.7            2.4       79.3
+Urban Spice Co                           120.05           10.4     109.65
+Blue Bonnet Dairy                         147.6            5.4      142.2
+FreshCart Market                         168.41            3.9     164.51
+
+23 rows selected.
 */
