@@ -73,6 +73,7 @@ CREATE TABLE DASC5306_Fall26_S001_T4_Campaign (
     advertised_grocery_item_name VARCHAR2(100) NOT NULL,
     advertised_grocery_category VARCHAR2(50) NOT NULL,
     campaign_hyperlink VARCHAR2(200) NOT NULL,
+    -- Dollars the platform pays per read of a recipe showing this campaign (e.g. 0.25)
     cashback_rate_per_read NUMBER(5,2) NOT NULL,
     -- ADDING CONSTRAINTS
     CONSTRAINT T4_Campaign_PK PRIMARY KEY (MERCHANT_REGISTRATION_NUMBER, CAMPAIGN_NUMBER),
@@ -97,6 +98,9 @@ CREATE TABLE DASC5306_FALL26_S001_T4_Cookbook (
     -- ADDING CONSTRAINTS
    CONSTRAINT T4_Cookbook_PK primary key (cookbook_id),
    CONSTRAINT T4_Cookbook_CK_NUMBER CHECK(cookbook_id > 0),
+   -- Only the cuisines currently supported by the platform (Phase 0 problem description)
+   CONSTRAINT T4_Cookbook_CK_cuisine CHECK (primary_cuisine IN ('Chinese','French','Greek','Indian','Italian',
+       'Japanese','Korean','Mediterranean','Mexican','Spanish','Thai')),
    -- No ON DELETE: a chef who still has cookbooks cannot be deleted (protects cookbooks). 
    CONSTRAINT T4_Cookbook_FK_Chef FOREIGN KEY (CHEF_MAV_ID) REFERENCES DASC5306_Fall26_S001_T4_Chef(CHEF_MAV_ID) 
 );
@@ -154,7 +158,7 @@ CREATE TABLE DASC5306_Fall26_S001_T4_Recipe (
     CONSTRAINT T4_Recipe_PK PRIMARY KEY (COOKBOOK_ID, RECIPE_NUMBER),
     CONSTRAINT T4_Recipe_CK_number CHECK (RECIPE_NUMBER > 0),
     CONSTRAINT T4_Recipe_CK_time CHECK (REGEXP_LIKE(time_of_publish, '^([01][0-9]|2[0-3]):[0-5][0-9]$')),
-    CONSTRAINT T4_Recipe_CK_meal CHECK (meal_type IN ('Breakfast','Lunch','Dinner','Snack','Dessert')),
+    CONSTRAINT T4_Recipe_CK_meal CHECK (meal_type IN ('Breakfast','Brunch','Lunch','Snacks','Dinner','Dessert')),
     CONSTRAINT T4_Recipe_CK_prep CHECK (preparation_time > 0),
     CONSTRAINT T4_Recipe_CK_cook CHECK (cook_time >= 0),
     CONSTRAINT T4_Recipe_CK_calories CHECK (total_calories >= 0),
