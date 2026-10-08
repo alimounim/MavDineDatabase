@@ -1,3 +1,4 @@
+-- level 0
 -- User: every registered user
 -- Candidate keys: MAV_ID, username, email
 CREATE TABLE DASC5306_Fall26_S001_T4_User (
@@ -42,7 +43,7 @@ CREATE TABLE DASC5306_Fall26_S001_T4_Merchant (
     CONSTRAINT T4_Merchant_CK_empno CHECK (number_of_employees > 0)
 );
 
-
+-- Level 1
 -- Homecook: every registered homecook
 -- Candidate keys: HOMECOOK_MAV_ID
 CREATE TABLE DASC5306_Fall26_S001_T4_Homecook (
@@ -219,3 +220,126 @@ CREATE TABLE DASC5306_Fall26_S001_T4_Display_On (
     CONSTRAINT T4_Display_FK_Campaign FOREIGN KEY (MERCHANT_REGISTRATION_NUMBER, CAMPAIGN_NUMBER)
         REFERENCES DASC5306_Fall26_S001_T4_Campaign(MERCHANT_REGISTRATION_NUMBER, CAMPAIGN_NUMBER) ON DELETE CASCADE
 );
+-- ===================== TRIGGERS =====================
+-- Business rules that a CHECK constraint cannot enforce
+-- (they need SYSDATE or data from another table).
+
+-- T1: User must be at least 18, and cannot enroll in the future.
+create or replace trigger t4_trg_user_dates before
+   insert or update of date_of_birth,date_of_enrollment on dasc5306_fall26_s001_t4_user
+   for each row
+begin
+   if :new.date_of_birth > add_months(
+      sysdate,
+      -216
+   ) then          -- 216 months = 18 years
+      raise_application_error(
+         -20001,
+         'User must be at least 18 years old.'
+      );
+   end if;
+   if :new.date_of_enrollment > sysdate then
+      raise_application_error(
+         -20002,
+         'Enrollment date cannot be in the future.'
+      );
+   end if;
+end;
+/
+
+-- T2: A cookbook cannot be created in the future.
+create or replace trigger t4_trg_cookbook_date before
+   insert or update of date_of_creation on dasc5306_fall26_s001_t4_cookbook
+   for each row
+begin
+   if :new.date_of_creation > sysdate then
+      raise_application_error(
+         -20003,
+         'Cookbook creation date cannot be in the future.'
+      );
+   end if;
+end;
+/
+
+-- T3: A recipe cannot be published in the future,
+--     or before its cookbook was created (cross-table rule).
+create or replace trigger t4_trg_recipe_date before
+   insert or update of date_of_publish,cookbook_id on dasc5306_fall26_s001_t4_recipe
+   for each row
+declare
+   v_created date;
+begin
+   if :new.date_of_publish > sysdate then
+      raise_application_error(
+         -20004,
+         'Recipe publish date cannot be in the future.'
+      );
+   end if;
+   select date_of_creation
+     into v_created
+     from dasc5306_fall26_s001_t4_cookbook
+    where cookbook_id = :new.cookbook_id;
+   if :new.date_of_publish < v_created then
+      raise_application_error(
+         -20005,
+         'Recipe cannot be published before its cookbook was created.'
+      );
+   end if;
+exception
+   when no_data_found then
+      null;   -- cookbook doesn't exist: let the FK constraint report it
+end;
+/
+
+-- T4: A reading session cannot start in the future,
+--     or before the recipe was published (cross-table rule).
+create or replace trigger t4_trg_read_time before
+   insert or update of start_time on dasc5306_fall26_s001_t4_read
+   for each row
+declare
+   v_published date;
+begin
+   if :new.start_time > systimestamp then
+      raise_application_error(
+         -20006,
+         'Reading session cannot start in the future.'
+      );
+   end if;
+   select date_of_publish
+     into v_published
+     from dasc5306_fall26_s001_t4_recipe
+    where cookbook_id = :new.cookbook_id
+      and recipe_number = :new.recipe_number;
+   if :new.start_time < v_published then
+      raise_application_error(
+         -20007,
+         'A recipe cannot be read before it was published.'
+      );
+   end if;
+exception
+   when no_data_found then
+      null;   -- recipe doesn't exist: let the FK constraint report it
+end;
+/
+
+-- T5: A homecook can only Like/Dislike a recipe they have read at least once.
+create or replace trigger t4_trg_like_requires_read before
+   insert on dasc5306_fall26_s001_t4_like_dislike
+   for each row
+declare
+   v_reads number;
+begin
+   select count(*)
+     into v_reads
+     from dasc5306_fall26_s001_t4_read
+    where homecook_mav_id = :new.homecook_mav_id
+      and cookbook_id = :new.cookbook_id
+      and recipe_number = :new.recipe_number;
+   if v_reads = 0 then
+      raise_application_error(
+         -20008,
+         'Homecook must read the recipe before liking/disliking it.'
+      );
+   end if;
+end;
+/
