@@ -69,6 +69,7 @@ Oracle Instant Client and put its folder in `config.json`:
 - **SQL console**: run any SQL (several statements, triggers with `/`). Ctrl+Enter runs it.
   It stops at the first error and rolls back that run.
 - **Scripts**: run `projectDBdrop/create/insert/update/queries.sql` like SQL*Plus, or **Reset**.
+  The app finds them in `../MavDine_DatabaseScripts/` (or the folder set as `scripts_dir` in `config.json`).
   On Omega it asks for confirmation first.
 
 ## Files

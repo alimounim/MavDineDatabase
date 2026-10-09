@@ -6,7 +6,7 @@
   <p class="muted">Read live from <code>projectDBqueries.sql</code>. Click one to run it.</p>
 </div></div>
 {% if not queries %}
-  <div class="card empty">projectDBqueries.sql wasn't found next to the app.</div>
+  <div class="card empty">projectDBqueries.sql wasn't found. It should be in <code>MavDine_DatabaseScripts/</code>, or set <code>scripts_dir</code> in config.json.</div>
 {% endif %}
 <div class="qlist">
   {% for q in queries %}

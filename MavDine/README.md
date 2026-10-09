@@ -69,6 +69,8 @@ Rules from the assignment that shaped the design:
 
 ## 2. Phase 0: The problem
 
+> Document: [Final problem description](MavDine_BusinessProblem/Final_Problem_Description.pdf)
+
 The owner (UTA) wants to track users, home cooks, chefs, cookbooks, recipes, merchants and campaigns,
 and how they all interact:
 
@@ -113,6 +115,8 @@ data (goals 6 and 7 are ours):
 
 ## 3. Phase 1: EER modeling
 
+> Document: [EER diagram](MavDine_Initial_EER_and_Final_Revised_EER/EER%20Diagram.pdf)
+
 The owner's description was turned into an **Extended Entity-Relationship diagram**. The assignment
 required it to be drawn by hand or in PowerPoint/Paint, using only the course notation and **(min, max)**
 cardinalities. Main modeling decisions:
@@ -129,6 +133,8 @@ cardinalities. Main modeling decisions:
 ---
 
 ## 4. Phase 2: Mapping to relations
+
+> Documents: [Relation schema](MavDine_MappedRelations_CandidateKeys_FunctionalDependencies_BCNF_DependencyLevels/RelationSchema.pdf) · [Candidate keys and functional dependencies](MavDine_MappedRelations_CandidateKeys_FunctionalDependencies_BCNF_DependencyLevels/RelationSchema_CandidateKeys_FunctionalDependencies.pdf)
 
 The EER diagram was mapped into **12 relations** using the textbook mapping steps. Every relation has
 its primary key, foreign keys (drawn as arrows), **all candidate keys**, and its **functional
@@ -160,6 +166,8 @@ Two example functional dependencies:
 
 ### BCNF check
 
+> Document: [BCNF check table, dependency levels and execution order](MavDine_MappedRelations_CandidateKeys_FunctionalDependencies_BCNF_DependencyLevels/BCNFCheckTable,%20DependencyLevels,ExecutionOrder.pdf)
+
 A relation is in BCNF when, for every functional dependency `X → A`, X is a superkey. Every FD in our
 12 relations has a primary key or candidate key on its left side, so **all 12 relations are already in
 BCNF** and no table had to be split. Each extra candidate key (username, email, website, chef_id)
@@ -183,11 +191,11 @@ The create and insert scripts run Level 0 → 4. The drop script runs Level 4 �
 
 | Script | Assignment step | What it does |
 |---|---|---|
-| [`projectDBcreate.sql`](projectDBcreate.sql) | Step 1: DDL | 12 tables with named constraints, plus 5 triggers |
-| [`projectDBinsert.sql`](projectDBinsert.sql) | Step 2: DML | 741 realistic rows (22 to 255 per table), shaped so every business query returns meaningful results |
-| [`projectDBupdate.sql`](projectDBupdate.sql) | Step 3: Updates | Inserts, updates and deletes; each one is documented with the query result it changes |
-| [`projectDBdrop.sql`](projectDBdrop.sql) | Step 4: Drop | Drops every table children-first with `PURGE`, then `PURGE RECYCLEBIN` |
-| [`projectDBqueries.sql`](projectDBqueries.sql) | Step 5: Queries | The 7 business goals: English version, SQL, and expected output before **and** after the update |
+| [`projectDBcreate.sql`](MavDine_DatabaseScripts/projectDBcreate.sql) | Step 1: DDL | 12 tables with named constraints, plus 5 triggers |
+| [`projectDBinsert.sql`](MavDine_DatabaseScripts/projectDBinsert.sql) | Step 2: DML | 741 realistic rows (22 to 255 per table), shaped so every business query returns meaningful results |
+| [`projectDBupdate.sql`](MavDine_DatabaseScripts/projectDBupdate.sql) | Step 3: Updates | Inserts, updates and deletes; each one is documented with the query result it changes |
+| [`projectDBdrop.sql`](MavDine_DatabaseScripts/projectDBdrop.sql) | Step 4: Drop | Drops every table children-first with `PURGE`, then `PURGE RECYCLEBIN` |
+| [`projectDBqueries.sql`](MavDine_DatabaseScripts/projectDBqueries.sql) | Step 5: Queries | The 7 business goals: English version, SQL, and expected output before **and** after the update |
 
 ### Constraints
 
@@ -241,7 +249,8 @@ student's reading (Q5), and renegotiates the two worst ad deals (Q7).
 
 ## 6. How to run the scripts
 
-In SQL*Plus on Omega, in the order used at the demo:
+In SQL*Plus on Omega, started from the folder that holds the five scripts
+(`MavDine_DatabaseScripts/`), in the order used at the demo:
 
 ```sql
 SET ECHO ON
@@ -349,13 +358,19 @@ project built, in the order I used them:
 
 ```
 MavDine/
-├── projectDBcreate.sql     12 tables, constraints and 5 triggers
-├── projectDBinsert.sql     741 rows of sample data
-├── projectDBupdate.sql     inserts/updates/deletes that change the query results
-├── projectDBdrop.sql       drops everything, children first
-├── projectDBqueries.sql    the 7 business queries with expected output
-└── mavdine_app/            MavDine Manager web interface (see its README)
+├── MavDine_BusinessProblem/                    Phase 0: final problem description
+├── MavDine_Initial_EER_and_Final_Revised_EER/  Phase 1: EER diagram
+├── MavDine_MappedRelations_CandidateKeys_FunctionalDependencies_BCNF_DependencyLevels/
+│                                               Phase 2: relation schema, candidate keys, FDs,
+│                                               BCNF check, dependency levels
+├── MavDine_DatabaseScripts/                    Phase 3: the five SQL scripts
+│   ├── projectDBcreate.sql     12 tables, constraints and 5 triggers
+│   ├── projectDBinsert.sql     741 rows of sample data
+│   ├── projectDBupdate.sql     inserts/updates/deletes that change the query results
+│   ├── projectDBdrop.sql       drops everything, children first
+│   └── projectDBqueries.sql    the 7 business queries with expected output
+└── mavdine_app/                MavDine Manager web interface (see its README)
 ```
 
-Course documents (the assignment, the problem statement, the EER and mapping PDFs) and personal study
-notes are kept out of the repository.
+The course assignment and personal study notes are kept out of the repository, and team members'
+names were removed from the published documents.

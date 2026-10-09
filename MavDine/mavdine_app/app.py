@@ -17,7 +17,7 @@ from sqlscript import first_keyword, short, split_script
 HERE = Path(__file__).parent
 CONFIG_FILE = HERE / "config.json"
 DEFAULT_CONFIG = {
-    "scripts_dir": "..",
+    "scripts_dir": "../MavDine_DatabaseScripts",
     "instant_client_dir": None,
     "profiles": {
         "omega": {"label": "Omega (UTA Oracle)", "host": "", "port": 1522, "service": "", "user": "",
@@ -38,7 +38,17 @@ def load_config():
 CONFIG = load_config()
 if CONFIG.get("instant_client_dir"):
     oracledb.init_oracle_client(lib_dir=CONFIG["instant_client_dir"])   # thick mode for old databases
-SCRIPTS_DIR = (HERE / CONFIG.get("scripts_dir", "..")).resolve()
+
+
+def find_scripts_dir():
+    """Folder holding projectDBcreate.sql: the configured one, else the usual places."""
+    for rel in (CONFIG.get("scripts_dir"), "../MavDine_DatabaseScripts", ".."):
+        if rel and (HERE / rel / "projectDBcreate.sql").exists():
+            return (HERE / rel).resolve()
+    return (HERE / DEFAULT_CONFIG["scripts_dir"]).resolve()
+
+
+SCRIPTS_DIR = find_scripts_dir()
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
