@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% from "_grid.html" import grid with context %}
+{% block title %}Scripts · MavDine Manager{% endblock %}
+{% block content %}
+<div class="pagehead"><div>
+  <h1>Scripts</h1>
+  <p class="muted">Runs your project scripts from <code>{{ folder }}</code>, the same way SQL*Plus would.</p>
+</div></div>
+
+{% set omega = 'omega' in sess.profile|lower %}
+<form method="post" class="card">
+  {% if omega %}
+    <div class="alert warn">You are connected to <b>Omega</b>. These scripts change the real database you submit.
+      <label class="check"><input type="checkbox" name="confirm"> I understand, run it on Omega</label></div>
+  {% endif %}
+  <div class="scriptrow reset">
+    <div><b>Reset database</b><div class="muted small">Drop → create → insert: back to the original sample data.</div></div>
+    <button class="btn primary" name="script" value="__reset__"
+            onclick="return confirm('Drop all MavDine tables and rebuild them with the sample data?')">Run reset</button>
+  </div>
+  {% for f in available %}
+    <div class="scriptrow">
+      <div><code>{{ f }}</code><div class="muted small">{{ info.get(f, '') }}</div></div>
+      <button class="btn" name="script" value="{{ f }}"
+              {% if f in ('projectDBdrop.sql', 'projectDBcreate.sql') %}onclick="return confirm('Run {{ f }}?')"{% endif %}>Run</button>
+    </div>
+  {% endfor %}
+</form>
+
+{% if log is not none %}
+  <div class="card">
+    <div class="cardhead">
+      <h2>Ran: {{ ran }}</h2>
+      <span class="small">
+        <span class="pill ok">{{ summary.ok }} OK</span>
+        {% if summary.err %}<span class="pill bad">{{ summary.err }} failed</span>{% endif %}
+        {% if summary.warn %}<span class="pill warn">{{ summary.warn }} warnings</span>{% endif %}
+        {% if summary.skipped %}<span class="pill">{{ summary.skipped }} SQL*Plus commands skipped</span>{% endif %}
+      </span>
+    </div>
+    <div class="gridtools">
+      <label class="check small"><input type="checkbox" id="onlyerr"> Show only problems</label>
+    </div>
+    <table class="grid compact log" id="scriptlog">
+      <thead><tr><th>File</th><th>Line</th><th>Statement</th><th>Result</th></tr></thead>
+      <tbody>
+      {% for e in log %}
+        <tr class="{{ 'ok' if e.ok else ('warn' if e.warn else 'bad') }}{{ ' skipped' if e.skipped }}">
+          <td class="small">{{ e.file }}</td><td class="small">{{ e.line }}</td>
+          <td><code class="small">{{ e.preview }}</code>
+            {% if e.cols %}<details><summary class="small">Show {{ e.rows|length }} row(s)</summary>{{ grid(e.cols, e.rows, 's' ~ loop.index) }}</details>{% endif %}
+          </td>
+          <td class="small">{{ e.msg }}{% if not e.ok and e.detail and not e.warn %}<details><summary>Oracle's message</summary><pre>{{ e.detail }}</pre></details>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
+{% endblock %}

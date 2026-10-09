@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Add' if mode == 'new' else 'Edit' }} {{ t.label }} · MavDine Manager{% endblock %}
+{% block content %}
+<div class="pagehead">
+  <div>
+    <h1>{{ 'Add a row to' if mode == 'new' else 'Edit' }} {{ t.label }}</h1>
+    <p class="muted"><a href="{{ url_for('table_view', label=t.label) }}">← Back to {{ t.label }}</a></p>
+  </div>
+</div>
+
+{% if error %}
+  <div class="alert err">{{ error }}{% if detail %}<details><summary>Oracle's message</summary><pre>{{ detail }}</pre></details>{% endif %}</div>
+{% endif %}
+
+<form method="post" class="card form">
+  {% for f in fields %}
+    <div class="field">
+      <label for="{{ f.name }}">
+        {{ f.label }}{% if f.required %}<span class="req">*</span>{% endif %}
+        {% if f.pk %}<span class="badge pk">PK</span>{% endif %}
+        {% if f.kind == 'fk' %}<span class="badge fk">FK → {{ f.ref }}</span>{% endif %}
+        <span class="type">{{ f.type }}</span>
+      </label>
+
+      {% if f.readonly %}
+        {% if f.kind == 'fk' %}
+          {% set ns = namespace(lbl=f.value) %}
+          {% for v, l in f.options %}{% if v == f.value %}{% set ns.lbl = l %}{% endif %}{% endfor %}
+          <input value="{{ ns.lbl }}" disabled>
+        {% else %}
+          <input value="{{ f.value }}" disabled>
+        {% endif %}
+        <div class="help">Part of the primary key, so it can't be changed. Delete the row and add a new one instead.</div>
+      {% elif f.kind in ('fk', 'select') %}
+        <select id="{{ f.name }}" name="{{ f.name }}" {{ 'required' if f.required }}>
+          <option value="">{{ '- choose -' if f.required else '(empty / NULL)' }}</option>
+          {% for v, l in f.options %}<option value="{{ v }}" {{ 'selected' if v == f.value }}>{{ l }}</option>{% endfor %}
+        </select>
+      {% elif f.kind == 'date' %}
+        <input id="{{ f.name }}" type="date" name="{{ f.name }}" value="{{ f.value }}" {{ 'required' if f.required }}>
+      {% elif f.kind == 'timestamp' %}
+        <input id="{{ f.name }}" type="datetime-local" step="1" name="{{ f.name }}" value="{{ f.value }}" {{ 'required' if f.required }}>
+      {% elif f.kind == 'number' %}
+        <input id="{{ f.name }}" type="number" step="{{ f.col.step }}" name="{{ f.name }}" value="{{ f.value }}" {{ 'required' if f.required }}>
+      {% elif f.col.length > 120 %}
+        <textarea id="{{ f.name }}" name="{{ f.name }}" maxlength="{{ f.col.length }}" rows="3" {{ 'required' if f.required }}>{{ f.value }}</textarea>
+      {% else %}
+        <input id="{{ f.name }}" name="{{ f.name }}" value="{{ f.value }}" maxlength="{{ f.col.length }}" {{ 'required' if f.required }}>
+      {% endif %}
+
+      {% for ch in f.checks %}<div class="help">Rule: <code>{{ ch }}</code></div>{% endfor %}
+    </div>
+  {% endfor %}
+
+  {% if t.table_checks or notes %}
+    <div class="rules-box">
+      <b>Other rules for this table</b>
+      <ul>
+        {% for ch in t.table_checks %}<li><code>{{ ch }}</code></li>{% endfor %}
+        {% for n in notes %}<li>{{ n }}</li>{% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <div class="form-actions">
+    <button class="btn primary">{{ 'Add row' if mode == 'new' else 'Save changes' }}</button>
+    <a class="btn" href="{{ url_for('table_view', label=t.label) }}">Cancel</a>
+    <span class="muted small"><span class="req">*</span> required</span>
+  </div>
+</form>
+{% endblock %}

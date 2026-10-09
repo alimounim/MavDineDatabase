@@ -5,3 +5,7 @@ print_pdfs/
 MavDine_CheatSheet.md
 MavDine_Phase3_Plan.md
 MavDine_Phase3_Guide.md
+
+# MavDine Manager: local settings and Python cache
+mavdine_app/config.json
+__pycache__/

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}{{ t.label }} · MavDine Manager{% endblock %}
+{% block content %}
+<div class="pagehead">
+  <div>
+    <h1>{{ t.label }} <span class="muted thin">Level {{ t.level }}</span></h1>
+    <p class="muted">{{ t.description }} <code class="small">{{ t.name }}</code></p>
+  </div>
+  <a class="btn primary" href="{{ url_for('row_new', label=t.label) }}">+ Add row</a>
+</div>
+
+<details class="card structure">
+  <summary>Structure: columns, keys and rules</summary>
+  <div class="structure-body">
+    <table class="grid compact">
+      <thead><tr><th>Column</th><th>Type</th><th>Null?</th><th>Key</th><th>Rules</th></tr></thead>
+      <tbody>
+      {% for c in t.columns %}
+        {% set fk = t.fk_for(c.name) %}
+        <tr>
+          <td><b>{{ c.name }}</b></td>
+          <td><code>{{ c.type_label }}</code></td>
+          <td>{{ '' if c.nullable else 'NOT NULL' }}</td>
+          <td>{% if c.name in t.pk %}<span class="badge pk">PK</span>{% endif %}
+              {% if fk %}<span class="badge fk">FK</span> → {{ fk.ref_table }}{% endif %}
+              {% for u in t.uniques %}{% if c.name in u %}<span class="badge uq">UNIQUE</span>{% endif %}{% endfor %}</td>
+          <td class="small">{% for ch in c.checks %}<code>{{ ch }}</code><br>{% endfor %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% if t.table_checks or t.fks or t.triggers %}
+    <div class="rules small">
+      {% for ch in t.table_checks %}<div><span class="badge ck">CHECK</span> <code>{{ ch }}</code></div>{% endfor %}
+      {% for fk in t.fks %}<div><span class="badge fk">FK</span> {{ fk.name }}: ({{ fk.columns|join(', ') }}) → {{ fk.ref_table }}({{ fk.ref_columns|join(', ') }})
+        {{ '· ON DELETE CASCADE' if fk.cascade else '· no cascade (parent delete is blocked)' }}</div>{% endfor %}
+      {% for tr in t.triggers %}<div><span class="badge trg">TRIGGER</span> {{ tr }}</div>{% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</details>
+
+<div class="gridtools">
+  <input class="filter" data-grid="rows" placeholder="Search {{ t.label }}…" autofocus>
+  <span class="muted small rowcount" data-grid="rows">{{ rows|length }} row(s)</span>
+</div>
+<div class="gridwrap">
+  <table class="grid sortable" id="rows">
+    <thead><tr>
+      {% for c in cols %}<th>{{ c }}{% if c in t.pk %} <span class="badge pk">PK</span>{% endif %}</th>{% endfor %}
+      <th class="actions"></th>
+    </tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr class="{{ 'hl' if hl and r.key == hl }}">
+        {% for c in cols %}
+          <td title="{{ show(r['values'][c]) }}">{{ show(r['values'][c]) }}{% if r.labels.get(c) %}<div class="sub">{{ r.labels[c] }}</div>{% endif %}</td>
+        {% endfor %}
+        <td class="actions">
+          {% if r.key %}
+            {% if editable %}<a href="{{ url_for('row_edit', label=t.label, k=r.key) }}">Edit</a>{% endif %}
+            <a class="danger" href="{{ url_for('row_delete', label=t.label, k=r.key) }}">Delete</a>
+          {% endif %}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="{{ cols|length + 1 }}" class="muted">No rows yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

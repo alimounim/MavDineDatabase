@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Business queries · MavDine Manager{% endblock %}
+{% block content %}
+<div class="pagehead"><div>
+  <h1>Business queries</h1>
+  <p class="muted">Read live from <code>projectDBqueries.sql</code>. Click one to run it.</p>
+</div></div>
+{% if not queries %}
+  <div class="card empty">projectDBqueries.sql wasn't found next to the app.</div>
+{% endif %}
+<div class="qlist">
+  {% for q in queries %}
+    <a class="card q" href="{{ url_for('query_run', n=q.number) }}">
+      <div class="qnum">Q{{ q.number }}</div>
+      <div><div class="muted small">{{ q.title }}</div><div>{{ q.english }}</div></div>
+    </a>
+  {% endfor %}
+</div>
+{% endblock %}

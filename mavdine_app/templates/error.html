@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Something went wrong</h1>
+<div class="alert err">{{ msg }}{% if detail %}<details><summary>Oracle's message</summary><pre>{{ detail }}</pre></details>{% endif %}</div>
+<p><a href="{{ url_for('dashboard') }}">Back to the dashboard</a> · <a href="{{ url_for('logout') }}">Log in again</a></p>
+{% endblock %}
+{% block bare %}
+<div class="login-wrap"><div class="card login">
+  <h1>Something went wrong</h1>
+  <div class="alert err">{{ msg }}</div>
+  <a class="btn" href="{{ url_for('login') }}">Back to login</a>
+</div></div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{# A searchable, sortable results table for query output. #}
+{% macro grid(cols, rows, id='g') %}
+  {% if rows %}
+  <div class="gridtools"><input class="filter" data-grid="{{ id }}" placeholder="Filter rows…"><span class="muted small rowcount" data-grid="{{ id }}">{{ rows|length }} row(s)</span></div>
+  <div class="gridwrap">
+    <table class="grid sortable" id="{{ id }}">
+      <thead><tr>{% for c in cols %}<th>{{ c }}</th>{% endfor %}</tr></thead>
+      <tbody>
+        {% for r in rows %}<tr>{% for v in r %}<td title="{{ show(v) }}">{{ show(v) }}</td>{% endfor %}</tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <p class="muted">No rows.</p>
+  {% endif %}
+{% endmacro %}

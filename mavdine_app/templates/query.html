@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "_grid.html" import grid with context %}
+{% block title %}Q{{ q.number }} · MavDine Manager{% endblock %}
+{% block content %}
+<div class="pagehead">
+  <div>
+    <h1>Q{{ q.number }} <span class="muted thin">{{ q.title }}</span></h1>
+    <p>{{ q.english }}</p>
+  </div>
+  <div class="btnrow">
+    {% if q.number > 1 %}<a class="btn" href="{{ url_for('query_run', n=q.number - 1) }}">← Q{{ q.number - 1 }}</a>{% endif %}
+    {% if q.number < queries|length %}<a class="btn" href="{{ url_for('query_run', n=q.number + 1) }}">Q{{ q.number + 1 }} →</a>{% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="cardhead">
+    <h2>Result</h2>
+    <span class="muted small">{{ r.msg }} · {{ r.ms }} ms</span>
+  </div>
+  {% if r.ok %}
+    {{ grid(r.cols, r.rows, 'res') }}
+  {% else %}
+    <div class="alert err">{{ r.msg }}{% if r.detail %}<details><summary>Oracle's message</summary><pre>{{ r.detail }}</pre></details>{% endif %}</div>
+  {% endif %}
+</div>
+
+<details class="card">
+  <summary>SQL</summary>
+  <pre class="sql">{{ q.sql }};</pre>
+  <form method="post" action="{{ url_for('sql_console') }}" class="inline">
+    <input type="hidden" name="sql" value="{{ q.sql }}">
+    <input type="hidden" name="commit" value="on">
+    <button class="btn small">Open in SQL console</button>
+  </form>
+</details>
+
+{% if q.expected_before or q.expected_after %}
+<details class="card">
+  <summary>Expected output (from the script)</summary>
+  <div class="expected">
+    {% if q.expected_before %}<div><h3>Before update</h3><pre>{{ q.expected_before }}</pre></div>{% endif %}
+    {% if q.expected_after %}<div><h3>After projectDBupdate.sql</h3><pre>{{ q.expected_after }}</pre></div>{% endif %}
+  </div>
+</details>
+{% endif %}
+{% endblock %}

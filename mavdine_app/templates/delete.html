@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% macro tree(nodes) %}
+  <ul class="tree">
+  {% for n in nodes %}
+    <li class="{{ 'cascade' if n.cascade else 'blocked' }}">
+      <b>{{ n.count }}</b> row(s) in <b>{{ n.table }}</b>
+      {% if n.cascade %}<span class="muted">will also be deleted (ON DELETE CASCADE, {{ n.fk }})</span>
+      {% else %}<span class="danger-text">block this delete ({{ n.fk }} has no cascade)</span>{% endif %}
+      {% if n.children %}{{ tree(n.children) }}{% endif %}
+    </li>
+  {% endfor %}
+  </ul>
+{% endmacro %}
+{% block title %}Delete from {{ t.label }} · MavDine Manager{% endblock %}
+{% block content %}
+<div class="pagehead"><div>
+  <h1>Delete from {{ t.label }}?</h1>
+  <p class="muted"><a href="{{ url_for('table_view', label=t.label) }}">← Back to {{ t.label }}</a></p>
+</div></div>
+
+<div class="card">
+  <table class="grid compact kv">
+    {% for c in t.columns %}<tr><th>{{ c.name }}</th><td>{{ show(row[c.name]) }}</td></tr>{% endfor %}
+  </table>
+</div>
+
+<div class="card">
+  <h2>What this delete affects</h2>
+  {% if impact %}
+    {{ tree(impact) }}
+    {% if blocked %}
+      <div class="alert err">Oracle will refuse this delete: some child rows point to it through a foreign key without
+        ON DELETE CASCADE. Delete or change those rows first. You can still try it to see the error.</div>
+    {% endif %}
+  {% else %}
+    <p class="muted">Nothing else references this row. Only this row will be deleted.</p>
+  {% endif %}
+  <form method="post" class="form-actions">
+    <button class="btn danger">Delete</button>
+    <a class="btn" href="{{ url_for('table_view', label=t.label) }}">Cancel</a>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% from "_grid.html" import grid with context %}
+{% block title %}SQL console · MavDine Manager{% endblock %}
+{% block content %}
+<div class="pagehead"><div>
+  <h1>SQL console</h1>
+  <p class="muted">Write any SQL. Several statements are fine: end each with <code>;</code>, and a trigger/PL/SQL block with a <code>/</code> line.
+    Press <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to run.</p>
+</div></div>
+
+<form method="post" class="card" id="sqlform">
+  <textarea name="sql" class="code" rows="10" spellcheck="false" autofocus
+            placeholder="SELECT * FROM DASC5306_Fall26_S001_T4_User WHERE city = 'Arlington';">{{ text }}</textarea>
+  <div class="form-actions">
+    <button class="btn primary">Run</button>
+    <label class="check"><input type="checkbox" name="commit" {{ 'checked' if commit }}> Commit changes when everything succeeds</label>
+    <span class="muted small">If a statement fails, it stops and everything from this run is rolled back. (CREATE/DROP/ALTER can't be rolled back.)</span>
+  </div>
+</form>
+
+{% if log %}
+  {% for e in log %}
+    <div class="card result {{ 'ok' if e.ok else ('warn' if e.warn else 'bad') }}">
+      <div class="cardhead">
+        <code class="small">{{ e.preview }}</code>
+        <span class="small {{ '' if e.ok else 'danger-text' }}">{{ e.msg }}{% if not e.skipped %} · {{ e.ms }} ms{% endif %}</span>
+      </div>
+      {% if not e.ok and e.detail %}<details><summary>Oracle's message</summary><pre>{{ e.detail }}</pre></details>{% endif %}
+      {% if e.cols %}{{ grid(e.cols, e.rows, 'g' ~ loop.index) }}{% endif %}
+    </div>
+  {% endfor %}
+  {% if not commit and log|selectattr('rowcount')|list %}
+    <div class="alert warn">Commit was off, so the changes above were rolled back.</div>
+  {% endif %}
+{% endif %}
+{% endblock %}

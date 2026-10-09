@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Connect · MavDine Manager{% endblock %}
+{% block bare %}
+<div class="login-wrap">
+  <form class="card login" method="post">
+    <h1>MavDine <span>Manager</span></h1>
+    <p class="muted">Connect to an Oracle database.</p>
+
+    <div class="tabs">
+      {% for key, pr in profiles.items() %}
+        <a href="{{ url_for('login', profile=key) }}" class="{{ 'on' if key == chosen }}">{{ pr.label }}</a>
+      {% endfor %}
+    </div>
+    <input type="hidden" name="profile" value="{{ chosen }}">
+
+    {% if error %}
+      <div class="alert err">{{ error }}{% if detail %}<details><summary>Details</summary><pre>{{ detail }}</pre></details>{% endif %}</div>
+    {% endif %}
+
+    <div class="grid2">
+      <label>Host <input name="host" value="{{ p.host }}" required placeholder="database host name"></label>
+      <label>Port <input name="port" value="{{ p.port }}" required inputmode="numeric"></label>
+    </div>
+    <label>Service name <input name="service" value="{{ p.service }}" required placeholder="e.g. FREEPDB1"></label>
+    <label>Username <input name="user" value="{{ p.user }}" required autocomplete="username"></label>
+    <label>Password <input name="password" type="password" required autocomplete="current-password" autofocus></label>
+    <label class="check"><input type="checkbox" name="tcps" {{ 'checked' if p.tcps }}> Encrypted connection (TCPS), needed for UTA's Oracle cloud database</label>
+    <label class="check"><input type="checkbox" name="remember" checked> Remember host, port, service and username (never the password)</label>
+    <button class="btn primary wide">Connect</button>
+
+    {% if chosen == 'omega' %}
+      <p class="hint">Use the database SQL*Plus on Omega connects to (see the README for how to find its host,
+        port and service name), your Oracle username and password, and keep "Encrypted connection" ticked.</p>
+    {% else %}
+      <p class="hint">Start the local database first: <code>docker compose up -d</code> in the
+        <code>mavdine_app</code> folder. The default local password is <code>mavdine</code>.</p>
+    {% endif %}
+  </form>
+</div>
+{% endblock %}

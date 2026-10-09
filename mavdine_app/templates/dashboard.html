@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="pagehead">
+  <div>
+    <h1>Dashboard</h1>
+    <p class="muted">Connected to <b>{{ sess.profile }}</b> as <b>{{ sess.user }}</b> ({{ sess.dsn }}).</p>
+  </div>
+  <a class="btn" href="{{ url_for('dashboard', refresh=1) }}">Refresh</a>
+</div>
+
+{% if not schema.tables %}
+  <div class="card empty">
+    <h2>No MavDine tables in this database yet</h2>
+    <p>Go to <a href="{{ url_for('scripts') }}">Scripts</a> and run <b>Reset</b> (drop → create → insert) to build and fill them.</p>
+  </div>
+{% else %}
+  {% for level, tables in schema.ordered()|groupby('level') %}
+    <h2 class="section">Level {{ level }}</h2>
+    <div class="tiles">
+      {% for t in tables %}
+        <a class="tile" href="{{ url_for('table_view', label=t.label) }}">
+          <div class="tile-top"><b>{{ t.label }}</b><span class="count">{{ counts[t.label] }}</span></div>
+          <div class="muted small">{{ t.description }}</div>
+          <div class="keys small">
+            <span class="badge pk">PK</span> {{ t.pk|join(', ') }}
+            {% for fk in t.fks %}<br><span class="badge fk">FK</span> → {{ fk.ref_table }}{% if fk.cascade %} <span class="muted">(cascade)</span>{% endif %}{% endfor %}
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% endfor %}
+{% endif %}
+{% endblock %}
