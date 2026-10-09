@@ -8,7 +8,7 @@ from sqlscript import split_script
 @dataclass
 class Query:
     number: int
-    title: str              # e.g. "Business Goal 6, added by the team"
+    title: str              # e.g. "Business Goal 6, added in Phase 1"
     english: str
     sql: str
     expected_before: str

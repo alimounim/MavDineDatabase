@@ -1,5 +1,5 @@
--- projectDBqueries.sql: MavDine database (Team 4, DASC5306 Fall 2026, Section 001)
--- Ad-hoc queries for the 7 business goals from Phase 0 (5 given + 2 added by the team).
+-- projectDBqueries.sql: MavDine database (DASC5306 Fall 2026, Section 001)
+-- Ad-hoc queries for the 7 business goals from Phase 0 (5 given + 2 added in Phase 1).
 -- Each query has: the English version, the SQL version, and the expected output.
 -- Run order for the demo: drop -> create -> insert -> queries -> update -> queries again.
 
@@ -295,7 +295,7 @@ Priya Sharma                   3.58 India        priya.sharma@mavs.uta.edu
 */
 
 -- =====================================================================
--- Query 6 (Business Goal 6, added by the team)
+-- Query 6 (Business Goal 6, added in Phase 1)
 -- English: List the names, websites, and advertised grocery items of merchants whose
 --          company headquarter city is 'Arlington' and who have at least one campaign
 --          on the platform, so these local campaigns can be highlighted to students.
@@ -332,7 +332,7 @@ Prairie Pantry               https://www.prairiepantry.com        All-Purpose Fl
 */
 
 -- =====================================================================
--- Query 7 (Business Goal 7, added by the team)
+-- Query 7 (Business Goal 7, added in Phase 1)
 -- English: For each merchant, list the total display cost paid to the platform and the
 --          total cashback owed (each campaign's cashback rate per read multiplied by the
 --          number of reads of every recipe it appears on). Report the net amount

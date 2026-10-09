@@ -1,6 +1,6 @@
 # MavDine: A Digital Cookbook Platform Database
 
-**DASC 5306-001, Fall 2026 · Project 1 · Team 4**
+**DASC 5306-001, Fall 2026 · Project 1**
 *Data Management System Development for a Data Intensive Application*
 
 MavDine is a database for an online cookbook platform for UTA students. Students sign up as
@@ -40,20 +40,19 @@ database ([`mavdine_app/`](MavDine/mavdine_app/)).
 ## 1. How the project was set up
 
 Project 1 is worth 24% of the course grade and is graded in phases. The graded phases carry 8% each.
-Every phase is submitted on Canvas as one zipped folder named `teamID_phaseX_versionY.zip`, with Y
-going up by one on each resubmission.
+Every phase is submitted on Canvas as one zipped folder with a phase and version number in its name
+(`…_phaseX_versionY.zip`), with Y going up by one on each resubmission.
 
-| Phase | Weight | What we did | Deliverable |
+| Phase | Weight | What was done | Deliverable |
 |---|---|---|---|
-| **0** Problem statement | (given) | Read the owner's description, added details and assumptions, and added 2 business goals of our own | Revised problem description |
+| **0** Problem statement | (given) | Read the owner's description, added details and assumptions, and added 2 new business goals | Revised problem description |
 | **1** EER modeling | 8% | Drew the Extended Entity-Relationship diagram in the course's notation | EER diagram |
 | **2** Mapping to relations | 8% | Converted the EER diagram into relations, with every primary key, foreign key, candidate key and functional dependency | Relational schema with keys and FDs |
 | **3** Database + SQL (demo) | 8% | Normalized to BCNF, built the database in Oracle, and wrote the 5 scripts | `projectDBcreate/insert/update/drop/queries.sql` |
 
 Rules from the assignment that shaped the design:
 
-- **Table names:** every table is prefixed `DASC5306_<semYear>_<section>_<team>_`, so `User` is
-  `DASC5306_Fall26_S001_T4_User`.
+- **Table names:** every table carries the course prefix, so `User` is `DASC5306_Fall26_S001_T4_User`.
 - **Database:** Oracle RDBMS, used through SQL*Plus on UTA's Omega server.
 - **Normalization:** every relation must be in **BCNF** before writing the DDL.
 - **Constraints and triggers:** every constraint has to be enforced in the database, using triggers
@@ -88,8 +87,8 @@ and how they all interact:
 
 ### The 7 business goals
 
-The owner listed 5 reports. Phase 1 required each team to add 2 more that use the merchant and campaign
-data (goals 6 and 7 are ours):
+The owner listed 5 reports. Phase 1 required 2 more that use the merchant and campaign data
+(goals 6 and 7 were added):
 
 | # | Report | Why the owner wants it |
 |---|---|---|
@@ -98,10 +97,10 @@ data (goals 6 and 7 are ours):
 | 3 | Most popular meal type per birth year, with average cooking time | Show each age group relevant content |
 | 4 | Cookbooks read **only** by CSE students enrolled after July 2024 | Spot what's trending in one group |
 | 5 | Subscribers who read **every** recipe of the Indian/Korean "campfire kitchen" cookbooks | Find enthusiasts for menu-design teams |
-| 6 | Arlington merchants with at least one campaign *(ours)* | Highlight local deals to students |
-| 7 | Display cost vs. cashback owed per merchant *(ours)* | Find placements where the platform pays out more than it earns, so it can renegotiate them |
+| 6 | Arlington merchants with at least one campaign *(added)* | Highlight local deals to students |
+| 7 | Display cost vs. cashback owed per merchant *(added)* | Find placements where the platform pays out more than it earns, so it can renegotiate them |
 
-### Assumptions we added
+### Assumptions added
 
 - Username and email are unique, so they become **candidate keys**.
 - Age, follower counts, subscriber counts and read/like totals are **derived**: queries calculate them,
@@ -168,7 +167,7 @@ Two example functional dependencies:
 
 > Document: [BCNF check table, dependency levels and execution order](MavDine/MavDine_MappedRelations_CandidateKeys_FunctionalDependencies_BCNF_DependencyLevels/BCNFCheckTable,%20DependencyLevels,ExecutionOrder.pdf)
 
-A relation is in BCNF when, for every functional dependency `X → A`, X is a superkey. Every FD in our
+A relation is in BCNF when, for every functional dependency `X → A`, X is a superkey. Every FD in the
 12 relations has a primary key or candidate key on its left side, so **all 12 relations are already in
 BCNF** and no table had to be split. Each extra candidate key (username, email, website, chef_id)
 became a `UNIQUE` constraint.
@@ -349,7 +348,7 @@ project built, in the order I used them:
   tracking without deleting them.
 - Use an AI assistant as a tool to build a practical web interface (Python, Flask, python-oracledb)
   on top of a database design I understand end to end.
-- Manage a **team project in phases**, with versioned submissions and a final task and time management
+- Manage a **project in phases**, with versioned submissions and a final task and time management
   report.
 
 ---
@@ -373,5 +372,4 @@ MavDine/
 └── mavdine_app/                    MavDine Manager web interface (see its README)
 ```
 
-The course assignment and personal study notes are kept out of the repository, and team members'
-names were removed from the published documents.
+The course assignment and personal study notes are kept out of the repository.

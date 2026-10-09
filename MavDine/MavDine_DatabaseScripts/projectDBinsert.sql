@@ -1,4 +1,4 @@
--- projectDBinsert.sql: MavDine database (Team 4, DASC5306 Fall 2026, Section 001)
+-- projectDBinsert.sql: MavDine database (DASC5306 Fall 2026, Section 001)
 -- Fills every table with realistic sample data, parents before children (Level 0 -> Level 4),
 -- so every foreign key value already exists when a child row is inserted.
 --

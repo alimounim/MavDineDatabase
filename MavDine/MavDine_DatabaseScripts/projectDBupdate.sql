@@ -1,4 +1,4 @@
--- projectDBupdate.sql: MavDine database (Team 4, DASC5306 Fall 2026, Section 001)
+-- projectDBupdate.sql: MavDine database (DASC5306 Fall 2026, Section 001)
 -- Changes the database through a series of inserts, updates and deletes, so that running
 -- projectDBqueries.sql again gives DIFFERENT results for the same queries.
 -- Run order: drop -> create -> insert -> queries -> UPDATE (this file) -> queries again.
