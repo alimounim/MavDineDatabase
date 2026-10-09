@@ -19,7 +19,7 @@ Problem statement → EER diagram     →  Relations, keys, FDs →  BCNF + Orac
 ```
 
 On top of the graded work, the repository also includes **MavDine Manager**, a web interface for the
-database ([`mavdine_app/`](mavdine_app/)).
+database ([`mavdine_app/`](MavDine/mavdine_app/)).
 
 ---
 
@@ -69,7 +69,7 @@ Rules from the assignment that shaped the design:
 
 ## 2. Phase 0: The problem
 
-> Document: [Final problem description](MavDine_BusinessProblem/Final_Problem_Description.pdf)
+> Document: [Final problem description](MavDine/MavDine_BusinessProblem/Final_Problem_Description.pdf)
 
 The owner (UTA) wants to track users, home cooks, chefs, cookbooks, recipes, merchants and campaigns,
 and how they all interact:
@@ -115,7 +115,7 @@ data (goals 6 and 7 are ours):
 
 ## 3. Phase 1: EER modeling
 
-> Document: [EER diagram](MavDine_Initial_EER_and_Final_Revised_EER/EER%20Diagram.pdf)
+> Document: [EER diagram](MavDine/MavDine_Initial_EER_and_Final_Revised_EER/EER%20Diagram.pdf)
 
 The owner's description was turned into an **Extended Entity-Relationship diagram**. The assignment
 required it to be drawn by hand or in PowerPoint/Paint, using only the course notation and **(min, max)**
@@ -134,7 +134,7 @@ cardinalities. Main modeling decisions:
 
 ## 4. Phase 2: Mapping to relations
 
-> Documents: [Relation schema](MavDine_MappedRelations_CandidateKeys_FunctionalDependencies_BCNF_DependencyLevels/RelationSchema.pdf) · [Candidate keys and functional dependencies](MavDine_MappedRelations_CandidateKeys_FunctionalDependencies_BCNF_DependencyLevels/RelationSchema_CandidateKeys_FunctionalDependencies.pdf)
+> Documents: [Relation schema](MavDine/MavDine_MappedRelations_CandidateKeys_FunctionalDependencies_BCNF_DependencyLevels/RelationSchema.pdf) · [Candidate keys and functional dependencies](MavDine/MavDine_MappedRelations_CandidateKeys_FunctionalDependencies_BCNF_DependencyLevels/RelationSchema_CandidateKeys_FunctionalDependencies.pdf)
 
 The EER diagram was mapped into **12 relations** using the textbook mapping steps. Every relation has
 its primary key, foreign keys (drawn as arrows), **all candidate keys**, and its **functional
@@ -166,7 +166,7 @@ Two example functional dependencies:
 
 ### BCNF check
 
-> Document: [BCNF check table, dependency levels and execution order](MavDine_MappedRelations_CandidateKeys_FunctionalDependencies_BCNF_DependencyLevels/BCNFCheckTable,%20DependencyLevels,ExecutionOrder.pdf)
+> Document: [BCNF check table, dependency levels and execution order](MavDine/MavDine_MappedRelations_CandidateKeys_FunctionalDependencies_BCNF_DependencyLevels/BCNFCheckTable,%20DependencyLevels,ExecutionOrder.pdf)
 
 A relation is in BCNF when, for every functional dependency `X → A`, X is a superkey. Every FD in our
 12 relations has a primary key or candidate key on its left side, so **all 12 relations are already in
@@ -191,11 +191,11 @@ The create and insert scripts run Level 0 → 4. The drop script runs Level 4 �
 
 | Script | Assignment step | What it does |
 |---|---|---|
-| [`projectDBcreate.sql`](MavDine_DatabaseScripts/projectDBcreate.sql) | Step 1: DDL | 12 tables with named constraints, plus 5 triggers |
-| [`projectDBinsert.sql`](MavDine_DatabaseScripts/projectDBinsert.sql) | Step 2: DML | 741 realistic rows (22 to 255 per table), shaped so every business query returns meaningful results |
-| [`projectDBupdate.sql`](MavDine_DatabaseScripts/projectDBupdate.sql) | Step 3: Updates | Inserts, updates and deletes; each one is documented with the query result it changes |
-| [`projectDBdrop.sql`](MavDine_DatabaseScripts/projectDBdrop.sql) | Step 4: Drop | Drops every table children-first with `PURGE`, then `PURGE RECYCLEBIN` |
-| [`projectDBqueries.sql`](MavDine_DatabaseScripts/projectDBqueries.sql) | Step 5: Queries | The 7 business goals: English version, SQL, and expected output before **and** after the update |
+| [`projectDBcreate.sql`](MavDine/MavDine_DatabaseScripts/projectDBcreate.sql) | Step 1: DDL | 12 tables with named constraints, plus 5 triggers |
+| [`projectDBinsert.sql`](MavDine/MavDine_DatabaseScripts/projectDBinsert.sql) | Step 2: DML | 741 realistic rows (22 to 255 per table), shaped so every business query returns meaningful results |
+| [`projectDBupdate.sql`](MavDine/MavDine_DatabaseScripts/projectDBupdate.sql) | Step 3: Updates | Inserts, updates and deletes; each one is documented with the query result it changes |
+| [`projectDBdrop.sql`](MavDine/MavDine_DatabaseScripts/projectDBdrop.sql) | Step 4: Drop | Drops every table children-first with `PURGE`, then `PURGE RECYCLEBIN` |
+| [`projectDBqueries.sql`](MavDine/MavDine_DatabaseScripts/projectDBqueries.sql) | Step 5: Queries | The 7 business goals: English version, SQL, and expected output before **and** after the update |
 
 ### Constraints
 
@@ -292,7 +292,7 @@ above.
   or to a local practice copy in Docker. Passwords are never stored.
 
 Built with Python, Flask and python-oracledb. Setup instructions are in
-[`mavdine_app/README.md`](mavdine_app/README.md).
+[`mavdine_app/README.md`](MavDine/mavdine_app/README.md).
 
 ---
 
@@ -357,19 +357,20 @@ project built, in the order I used them:
 ## 9. Repository structure
 
 ```
+README.md                                           this file
 MavDine/
-├── MavDine_BusinessProblem/                    Phase 0: final problem description
-├── MavDine_Initial_EER_and_Final_Revised_EER/  Phase 1: EER diagram
+├── MavDine_BusinessProblem/                        Phase 0: final problem description
+├── MavDine_Initial_EER_and_Final_Revised_EER/      Phase 1: EER diagram
 ├── MavDine_MappedRelations_CandidateKeys_FunctionalDependencies_BCNF_DependencyLevels/
-│                                               Phase 2: relation schema, candidate keys, FDs,
-│                                               BCNF check, dependency levels
-├── MavDine_DatabaseScripts/                    Phase 3: the five SQL scripts
+│                                                   Phase 2: relation schema, candidate keys, FDs,
+│                                                   BCNF check, dependency levels
+├── MavDine_DatabaseScripts/                        Phase 3: the five SQL scripts
 │   ├── projectDBcreate.sql     12 tables, constraints and 5 triggers
 │   ├── projectDBinsert.sql     741 rows of sample data
 │   ├── projectDBupdate.sql     inserts/updates/deletes that change the query results
 │   ├── projectDBdrop.sql       drops everything, children first
 │   └── projectDBqueries.sql    the 7 business queries with expected output
-└── mavdine_app/                MavDine Manager web interface (see its README)
+└── mavdine_app/                    MavDine Manager web interface (see its README)
 ```
 
 The course assignment and personal study notes are kept out of the repository, and team members'
